@@ -1065,6 +1065,16 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 			"invalid request: "+err.Error())
 	}
 
+	actErr := chainstate.WithActivation(balances, "hercules", func() error {
+		request.OwnerSigningPublicKey = ""
+		return nil
+	}, func() error {
+		return nil
+	})
+	if actErr != nil {
+		return "", actErr
+	}
+
 	// Always extend if size is increased
 	if request.Size > 0 {
 		request.Extend = true
@@ -1102,7 +1112,7 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 	// update allocation transaction hash
 	alloc.Tx = t.Hash
 
-	actErr := chainstate.WithActivation(balances, "demeter", func() error {
+	actErr = chainstate.WithActivation(balances, "demeter", func() error {
 		return nil
 	}, func() error {
 		if t.Value > 0 {
