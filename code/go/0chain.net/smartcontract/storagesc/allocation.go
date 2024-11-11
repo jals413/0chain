@@ -304,6 +304,15 @@ func (sc *StorageSmartContract) newAllocationRequestInternal(
 		return "", common.NewErrorf("allocation_creation_failed", "activation error: %v", actErr)
 	}
 
+	if actErr := chainstate.WithActivation(balances, "hercules", func() error {
+		request.OwnerSigningPublickKey = ""
+		return nil
+	}, func() error {
+		return nil
+	}); actErr != nil {
+		return "", common.NewErrorf("allocation_creation_failed", "activation error: %v", actErr)
+	}
+
 	if err := request.validate(conf); err != nil {
 		return "", common.NewErrorf("allocation_creation_failed", "invalid request: "+err.Error())
 	}
