@@ -34,7 +34,7 @@ import (
 
 const (
 	CHUNK_SIZE       = 64 * KB
-	MAX_CHAIN_LENGTH = 64
+	MAX_CHAIN_LENGTH = 128
 )
 
 func blobberKey(id string) datastore.Key {
