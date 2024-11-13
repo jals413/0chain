@@ -1,6 +1,7 @@
 package storagesc
 
 import (
+	"0chain.net/core/util/entitywrapper"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -95,7 +96,9 @@ type newAllocationRequest struct {
 	FileOptionsChanged   bool       `json:"file_options_changed"`
 	FileOptions          uint16     `json:"file_options"`
 
-	IsEnterprise bool `json:"is_enterprise"`
+	IsEnterprise           bool   `json:"is_enterprise"`
+	StorageVersion         int    `json:"storage_version"`
+	OwnerSigningPublickKey string `json:"owner_signing_public_key"`
 }
 
 // storageAllocation from the request
@@ -119,23 +122,45 @@ func (nar *newAllocationRequest) storageAllocation(balances chainstate.StateCont
 		sa.SetEntity(alloc)
 		return nil
 	}, func() error {
-		allocV2 := &storageAllocationV2{
-			Version:              storageAllocationV2Version,
-			DataShards:           nar.DataShards,
-			ParityShards:         nar.ParityShards,
-			Size:                 nar.Size,
-			Expiration:           common.Timestamp(common.ToTime(now).Add(conf.TimeUnit).Unix()),
-			Owner:                nar.Owner,
-			OwnerPublicKey:       nar.OwnerPublicKey,
-			PreferredBlobbers:    nar.Blobbers,
-			ReadPriceRange:       nar.ReadPriceRange,
-			WritePriceRange:      nar.WritePriceRange,
-			ThirdPartyExtendable: nar.ThirdPartyExtendable,
-			FileOptions:          nar.FileOptions,
-			IsEnterprise:         &nar.IsEnterprise,
-		}
-		sa.SetEntity(allocV2)
-		return nil
+		return chainstate.WithActivation(balances, "hercules", func() error {
+			allocV2 := &storageAllocationV2{
+				Version:              storageAllocationV2Version,
+				DataShards:           nar.DataShards,
+				ParityShards:         nar.ParityShards,
+				Size:                 nar.Size,
+				Expiration:           common.Timestamp(common.ToTime(now).Add(conf.TimeUnit).Unix()),
+				Owner:                nar.Owner,
+				OwnerPublicKey:       nar.OwnerPublicKey,
+				PreferredBlobbers:    nar.Blobbers,
+				ReadPriceRange:       nar.ReadPriceRange,
+				WritePriceRange:      nar.WritePriceRange,
+				ThirdPartyExtendable: nar.ThirdPartyExtendable,
+				FileOptions:          nar.FileOptions,
+				IsEnterprise:         &nar.IsEnterprise,
+			}
+			sa.SetEntity(allocV2)
+			return nil
+		}, func() error {
+			allocV3 := &storageAllocationV3{
+				Version:                storageAllocationV2Version,
+				DataShards:             nar.DataShards,
+				ParityShards:           nar.ParityShards,
+				Size:                   nar.Size,
+				Expiration:             common.Timestamp(common.ToTime(now).Add(conf.TimeUnit).Unix()),
+				Owner:                  nar.Owner,
+				OwnerPublicKey:         nar.OwnerPublicKey,
+				PreferredBlobbers:      nar.Blobbers,
+				ReadPriceRange:         nar.ReadPriceRange,
+				WritePriceRange:        nar.WritePriceRange,
+				ThirdPartyExtendable:   nar.ThirdPartyExtendable,
+				FileOptions:            nar.FileOptions,
+				IsEnterprise:           &nar.IsEnterprise,
+				StorageVersion:         &nar.StorageVersion,
+				OwnerSigningPublickKey: &nar.OwnerSigningPublickKey,
+			}
+			sa.SetEntity(allocV3)
+			return nil
+		})
 	}); actErr != nil {
 		logging.Logger.Error("new_allocation_request_failed: error setting storage allocation", zap.Error(actErr))
 		return nil, actErr
@@ -272,6 +297,15 @@ func (sc *StorageSmartContract) newAllocationRequestInternal(
 
 	if actErr := chainstate.WithActivation(balances, "electra", func() error {
 		request.IsEnterprise = false
+		return nil
+	}, func() error {
+		return nil
+	}); actErr != nil {
+		return "", common.NewErrorf("allocation_creation_failed", "activation error: %v", actErr)
+	}
+
+	if actErr := chainstate.WithActivation(balances, "hercules", func() error {
+		request.OwnerSigningPublickKey = ""
 		return nil
 	}, func() error {
 		return nil
@@ -568,6 +602,8 @@ type updateAllocationRequest struct {
 	SetThirdPartyExtendable bool   `json:"set_third_party_extendable"`
 	FileOptionsChanged      bool   `json:"file_options_changed"`
 	FileOptions             uint16 `json:"file_options"`
+
+	OwnerSigningPublicKey string `json:"owner_signing_public_key"`
 }
 
 func (uar *updateAllocationRequest) decode(b []byte) error {
@@ -581,6 +617,7 @@ func (uar *updateAllocationRequest) validate(
 ) error {
 	if uar.Size == 0 &&
 		!uar.Extend &&
+		len(uar.OwnerSigningPublicKey) == 0 &&
 		len(uar.AddBlobberId) == 0 &&
 		len(uar.Name) == 0 &&
 		(!uar.SetThirdPartyExtendable || (uar.SetThirdPartyExtendable && alloc.ThirdPartyExtendable)) &&
@@ -981,7 +1018,7 @@ func (sc *StorageSmartContract) extendAllocation(
 				if err != nil {
 					return err
 				}
-				if err := sp.reduceOffer(coin); err != nil {
+				if err := sp.reduceOffer(balances, coin); err != nil {
 					return fmt.Errorf("reduce offer: %v", err)
 				}
 			}
@@ -1037,6 +1074,16 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 			"invalid request: "+err.Error())
 	}
 
+	actErr := chainstate.WithActivation(balances, "hercules", func() error {
+		request.OwnerSigningPublicKey = ""
+		return nil
+	}, func() error {
+		return nil
+	})
+	if actErr != nil {
+		return "", actErr
+	}
+
 	// Always extend if size is increased
 	if request.Size > 0 {
 		request.Extend = true
@@ -1074,7 +1121,7 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 	// update allocation transaction hash
 	alloc.Tx = t.Hash
 
-	actErr := chainstate.WithActivation(balances, "demeter", func() error {
+	actErr = chainstate.WithActivation(balances, "demeter", func() error {
 		return nil
 	}, func() error {
 		if t.Value > 0 {
@@ -1094,13 +1141,26 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 			err.Error())
 	}
 
-	isEnterprise := false
+	var (
+		isEnterprise   bool
+		storageVersion = 0
+	)
 	if actErr = chainstate.WithActivation(balances, "electra", func() error {
 		return nil
 	}, func() error {
 		if sa.Entity().GetVersion() == "v2" {
 			if v2 := sa.Entity().(*storageAllocationV2); v2 != nil && v2.IsEnterprise != nil && *v2.IsEnterprise {
 				isEnterprise = true
+			}
+		} else if sa.Entity().GetVersion() == "v3" {
+			if v3 := sa.Entity().(*storageAllocationV3); v3 != nil {
+				if v3.IsEnterprise != nil && *v3.IsEnterprise {
+					isEnterprise = true
+				}
+
+				if v3.StorageVersion != nil {
+					storageVersion = *v3.StorageVersion
+				}
 			}
 		}
 		return nil
@@ -1122,7 +1182,7 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 
 		if len(request.AddBlobberId) > 0 {
 			blobbers, err = alloc.changeBlobbers(
-				conf, blobbers, request.AddBlobberId, request.AddBlobberAuthTicket, request.RemoveBlobberId, t.CreationDate, balances, sc, t, isEnterprise,
+				conf, blobbers, request.AddBlobberId, request.AddBlobberAuthTicket, request.RemoveBlobberId, t.CreationDate, balances, sc, t, isEnterprise, storageVersion,
 			)
 			if err != nil {
 				return "", common.NewError("allocation_updating_failed", err.Error())
@@ -1167,6 +1227,24 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 			}
 			alloc.OwnerPublicKey = request.OwnerPublicKey
 		}
+
+		if actErr = chainstate.WithActivation(balances, "hercules", func() error {
+			return nil
+		}, func() error {
+			if request.OwnerSigningPublicKey != "" {
+				if err = sa.Update(&storageAllocationV3{}, func(e entitywrapper.EntityI) error {
+					a := e.(*storageAllocationV3)
+					a.OwnerSigningPublickKey = &request.OwnerSigningPublicKey
+					return nil
+				}); err != nil {
+					return common.NewError("allocation_updating_failed", err.Error())
+				}
+
+			}
+			return nil
+		}); actErr != nil {
+			return "", actErr
+		}
 	}
 
 	var cpBalance currency.Coin
@@ -1179,7 +1257,7 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 		cpBalance = cp.Balance
 	}
 
-	tokensRequiredToLock, err := alloc.requiredTokensForUpdateAllocation(cpBalance, request.Extend, isEnterprise, t.CreationDate)
+	tokensRequiredToLock, err := alloc.requiredTokensForUpdateAllocation(balances, cpBalance, request.Extend, isEnterprise, t.CreationDate)
 	if err != nil {
 		return "", common.NewError("allocation_updating_failed", err.Error())
 	}
@@ -1445,7 +1523,7 @@ func (sc *StorageSmartContract) cancelAllocationRequest(
 			return "", common.NewError("fini_alloc_failed",
 				"can't get stake pool of "+d.BlobberID+": "+err.Error())
 		}
-		if err := sp.reduceOffer(d.Offer()); err != nil {
+		if err := sp.reduceOffer(balances, d.Offer()); err != nil {
 			return "", common.NewError("fini_alloc_failed",
 				"error removing offer: "+err.Error())
 		}
@@ -1458,6 +1536,10 @@ func (sc *StorageSmartContract) cancelAllocationRequest(
 	}, func() error {
 		if sa.Entity().GetVersion() == "v2" {
 			if v2 := sa.Entity().(*storageAllocationV2); v2 != nil && v2.IsEnterprise != nil && *v2.IsEnterprise {
+				isEnterprise = true
+			}
+		} else if sa.Entity().GetVersion() == "v3" {
+			if v3 := sa.Entity().(*storageAllocationV3); v3 != nil && v3.IsEnterprise != nil && *v3.IsEnterprise {
 				isEnterprise = true
 			}
 		}
@@ -1572,7 +1654,7 @@ func (sc *StorageSmartContract) finalizeAllocationInternal(
 			return nil, common.NewError("fini_alloc_failed",
 				"can't get stake pool of "+d.BlobberID+": "+err.Error())
 		}
-		if err := sp.reduceOffer(d.Offer()); err != nil {
+		if err := sp.reduceOffer(balances, d.Offer()); err != nil {
 			return nil, common.NewError("fini_alloc_failed",
 				"error removing offer: "+err.Error())
 		}
@@ -1585,6 +1667,10 @@ func (sc *StorageSmartContract) finalizeAllocationInternal(
 	}, func() error {
 		if sa.Entity().GetVersion() == "v2" {
 			if v2 := sa.Entity().(*storageAllocationV2); v2 != nil && v2.IsEnterprise != nil && *v2.IsEnterprise {
+				isEnterprise = true
+			}
+		} else if sa.Entity().GetVersion() == "v3" {
+			if v3 := sa.Entity().(*storageAllocationV3); v3 != nil && v3.IsEnterprise != nil && *v3.IsEnterprise {
 				isEnterprise = true
 			}
 		}
@@ -1736,6 +1822,12 @@ func (sc *StorageSmartContract) finishAllocation(
 	if err = balances.AddTransfer(transfer); err != nil {
 		return fmt.Errorf("could not refund lock token: %v", err)
 	}
+
+	balances.EmitEvent(event.TypeStats, event.TagUnlockWritePool, alloc.ID, event.WritePoolLock{
+		Client:       t.ClientID,
+		AllocationId: alloc.ID,
+		Amount:       int64(alloc.WritePool),
+	})
 
 	alloc.WritePool = 0
 	return nil

@@ -1,6 +1,10 @@
 package storagesc
 
 import (
+	"0chain.net/chaincore/smartcontractinterface"
+	"0chain.net/core/datastore"
+	"0chain.net/smartcontract/dto"
+	"encoding/json"
 	"errors"
 	"strings"
 
@@ -83,8 +87,21 @@ func (_ *StorageSmartContract) killBlobber(
 	}
 	bb := blobber.mustBase()
 
+	if actErr := cstate.WithActivation(balances, "hercules", func() error {
+		return nil
+	}, func() error {
+		_, err = balances.InsertTrieNode(GetKilledIdKey(blobber.Id(), "blobber"), &datastore.NOIDField{})
+		if err != nil {
+			return common.NewError("kill_blobber_failed", "saving blobber kill id: "+err.Error())
+		}
+		return nil
+	}); actErr != nil {
+		return "", actErr
+	}
+
 	// delete the blobber from MPT if it's empty and has no stake pools
 	if bb.SavedData <= 0 && len(sp.GetPools()) == 0 {
+
 		// remove the blobber from MPT
 		_, err := balances.DeleteTrieNode(blobber.GetKey())
 		if err != nil {
@@ -169,8 +186,21 @@ func (_ *StorageSmartContract) killValidator(
 		return "", common.NewError("kill_validator_failed", err.Error())
 	}
 
+	if actErr := cstate.WithActivation(balances, "hercules", func() error {
+		return nil
+	}, func() error {
+		_, err = balances.InsertTrieNode(GetKilledIdKey(validator.Id(), "validator"), &datastore.NOIDField{})
+		if err != nil {
+			return common.NewError("kill_validator_failed", "saving validator kill id: "+err.Error())
+		}
+		return nil
+	}); actErr != nil {
+		return "", actErr
+	}
+
 	// delete the validator from MPT if its stake pools is empty
 	if len(sp.GetPools()) == 0 {
+
 		// remove the validator from MPT
 		_, err := balances.DeleteTrieNode(validator.GetKey())
 		if err != nil {
@@ -188,5 +218,37 @@ func (_ *StorageSmartContract) killValidator(
 	if err != nil {
 		return "", common.NewError("kill_validator_failed", "saving validator: "+err.Error())
 	}
+	return "", nil
+}
+
+func (sc *StorageSmartContract) insertKilledProviderID(
+	t *transaction.Transaction,
+	input []byte,
+	balances cstate.StateContextI,
+) (string, error) {
+	conf, err := sc.getConfig(balances, true)
+	if err != nil {
+		return "", common.NewError("insert_killed_provider_id_failed",
+			"can't get the config: "+err.Error())
+	}
+
+	if err := smartcontractinterface.AuthorizeWithOwner("insert_killed_provider_id", func() bool {
+		return t.ClientID == conf.OwnerId
+	}); err != nil {
+		return "", common.NewError("insert_killed_provider_id_failed", err.Error())
+	}
+
+	storageNodeDto := &dto.StorageNodeIdField{}
+	if err := json.Unmarshal(input, storageNodeDto); err != nil {
+		return "", common.NewError("insert_killed_provider_id_failed",
+			"malformed request: "+err.Error())
+	}
+
+	_, err = balances.InsertTrieNode(GetKilledIdKey(storageNodeDto.Id, "blobber"), &datastore.NOIDField{})
+	if err != nil {
+		return "", common.NewError("insert_killed_provider_id_failed",
+			"saving blobber kill id: "+err.Error())
+	}
+
 	return "", nil
 }

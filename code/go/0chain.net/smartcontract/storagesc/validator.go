@@ -93,6 +93,22 @@ func (sc *StorageSmartContract) addValidator(t *transaction.Transaction, input [
 			return "", actErr
 		}
 
+		if actErr := state.WithActivation(balances, "hercules", func() error {
+			return nil
+		}, func() error {
+			has, err := sc.isValidatorInKilledIds(newValidatorObject.ID, balances)
+			if err != nil {
+				return fmt.Errorf("could not check validator killed ids: %v", err)
+			}
+			if has {
+				return common.NewError("add_validator_failed",
+					"validator is already killed")
+			}
+			return nil
+		}); actErr != nil {
+			return "", actErr
+		}
+
 		sc.statIncr(statAddValidator)
 		sc.statIncr(statNumberOfValidators)
 	default:
