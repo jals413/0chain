@@ -16,7 +16,7 @@ import (
 )
 
 type StorageAllocationBlobbers struct {
-	storageAllocationV2 `json:",inline"`
+	storageAllocationV3 `json:",inline"`
 	Blobbers            []*storageNodeResponse `json:"blobbers"`
 }
 
@@ -56,8 +56,9 @@ func allocationTableToStorageAllocationBlobbers(alloc *event.Allocation, eventDb
 				MaxNumDelegates:    b.NumDelegates,
 				ServiceChargeRatio: b.ServiceCharge,
 			},
-			IsRestricted: b.IsRestricted,
-			IsEnterprise: b.IsEnterprise,
+			IsRestricted:   b.IsRestricted,
+			IsEnterprise:   b.IsEnterprise,
+			StorageVersion: b.StorageVersion,
 		})
 
 		terms := blobberTermsMap[b.ID]
@@ -72,7 +73,7 @@ func allocationTableToStorageAllocationBlobbers(alloc *event.Allocation, eventDb
 		blobberMap[b.ID] = ba
 	}
 
-	saV2 := &storageAllocationV2{
+	saV3 := &storageAllocationV3{
 		ID:                   alloc.AllocationID,
 		Tx:                   alloc.TransactionID,
 		DataShards:           alloc.DataShards,
@@ -94,24 +95,26 @@ func allocationTableToStorageAllocationBlobbers(alloc *event.Allocation, eventDb
 			FailedChallenges:          alloc.FailedChallenges,
 			LastestClosedChallengeTxn: alloc.LatestClosedChallengeTxn,
 		},
-		BlobberAllocs:     blobberDetails,
-		BlobberAllocsMap:  blobberMap,
-		ReadPriceRange:    PriceRange{alloc.ReadPriceMin, alloc.ReadPriceMax},
-		WritePriceRange:   PriceRange{alloc.WritePriceMin, alloc.WritePriceMax},
-		StartTime:         common.Timestamp(alloc.StartTime),
-		Finalized:         alloc.Finalized,
-		Canceled:          alloc.Cancelled,
-		MovedToChallenge:  alloc.MovedToChallenge,
-		MovedBack:         alloc.MovedBack,
-		MovedToValidators: alloc.MovedToValidators,
-		TimeUnit:          time.Duration(alloc.TimeUnit),
-		IsEnterprise:      &alloc.IsEnterprise,
+		BlobberAllocs:          blobberDetails,
+		BlobberAllocsMap:       blobberMap,
+		ReadPriceRange:         PriceRange{alloc.ReadPriceMin, alloc.ReadPriceMax},
+		WritePriceRange:        PriceRange{alloc.WritePriceMin, alloc.WritePriceMax},
+		StartTime:              common.Timestamp(alloc.StartTime),
+		Finalized:              alloc.Finalized,
+		Canceled:               alloc.Cancelled,
+		MovedToChallenge:       alloc.MovedToChallenge,
+		MovedBack:              alloc.MovedBack,
+		MovedToValidators:      alloc.MovedToValidators,
+		TimeUnit:               time.Duration(alloc.TimeUnit),
+		IsEnterprise:           &alloc.IsEnterprise,
+		StorageVersion:         &alloc.StorageVersion,
+		OwnerSigningPublickKey: &alloc.OwnerSigningPublicKey,
 	}
 	sa := &StorageAllocation{}
-	sa.SetEntity(saV2)
+	sa.SetEntity(saV3)
 
 	res := &StorageAllocationBlobbers{
-		storageAllocationV2: *saV2,
+		storageAllocationV3: *saV3,
 		Blobbers:            storageNodes,
 	}
 
@@ -153,6 +156,29 @@ func storageAllocationToAllocationTable(balances cstate.StateContextI, sa *Stora
 		if sa.Entity().GetVersion() == "v2" {
 			if v2 := sa.Entity().(*storageAllocationV2); v2 != nil && v2.IsEnterprise != nil {
 				alloc.IsEnterprise = *v2.IsEnterprise
+			}
+		}
+		return nil
+	}); actErr != nil {
+		return nil, actErr
+	}
+
+	if actErr := cstate.WithActivation(balances, "hercules", func() error {
+		return nil
+	}, func() error {
+		if sa.Entity().GetVersion() == "v3" {
+			v3, ok := sa.Entity().(*storageAllocationV3)
+			if !ok || v3 == nil {
+				return nil
+			}
+			if v3.IsEnterprise != nil {
+				alloc.IsEnterprise = *v3.IsEnterprise
+			}
+			if v3.StorageVersion != nil {
+				alloc.StorageVersion = *v3.StorageVersion
+			}
+			if v3.OwnerSigningPublickKey != nil {
+				alloc.OwnerSigningPublicKey = *v3.OwnerSigningPublickKey
 			}
 		}
 		return nil
