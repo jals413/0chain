@@ -98,7 +98,6 @@ func TestSelectBlobbers(t *testing.T) {
 		StorageSmartContract, storageAllocationBase, StorageNodes, chainState.StateContextI) {
 		var balances = &mocks.StateContextI{}
 		var ssc = StorageSmartContract{
-
 			SmartContract: sci.NewSC(ADDRESS),
 		}
 		var sa = storageAllocationBase{

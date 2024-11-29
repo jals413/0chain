@@ -1,6 +1,7 @@
 package storagesc
 
 import (
+	"0chain.net/chaincore/threshold/bls"
 	"sync"
 	"testing"
 	"time"
@@ -37,6 +38,15 @@ type testBalances struct {
 
 	mpts      *mptStore // use for benchmarks
 	skipMerge bool      // don't merge for now
+}
+
+func (tb *testBalances) LoadDKGSummary(magicBlockNum int64) (*bls.DKGSummary, error) {
+	return nil, nil
+}
+
+func (tb *testBalances) SetDKG(dkg *bls.DKG) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func newTestBalances(t testing.TB, mpts bool) (tb *testBalances) {
