@@ -2,7 +2,6 @@ package minersc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"sync"
@@ -121,21 +120,6 @@ func (msc *MinerSmartContract) Execute(t *transaction.Transaction,
 		lock.Lock()
 		defer lock.Unlock()
 	}
-
-	if gn.MustBase().OwnerId != t.ClientID {
-		if funcName == "vc_add" {
-			return common.NewErrorf("failed execution", "no miner smart contract method with name: %v", funcName).Error(), nil
-		}
-
-		if funcName == "delete_miner" {
-			return errors.New("delete miner is disabled").Error(), nil
-		}
-
-		if funcName == "delete_sharder" {
-			return errors.New("delete sharder is disabled").Error(), nil
-		}
-	}
-
 	scFunc, found := msc.smartContractFunctions[funcName]
 	if !found {
 		return common.NewErrorf("failed execution", "no miner smart contract method with name: %v", funcName).Error(), nil

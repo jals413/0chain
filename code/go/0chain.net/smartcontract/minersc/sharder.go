@@ -10,6 +10,7 @@ import (
 	"0chain.net/smartcontract/stakepool/spenum"
 
 	cstate "0chain.net/chaincore/chain/state"
+	"0chain.net/chaincore/smartcontractinterface"
 	"0chain.net/chaincore/transaction"
 	"0chain.net/core/common"
 	"0chain.net/core/config"
@@ -169,6 +170,21 @@ func (msc *MinerSmartContract) DeleteSharder(
 	gn *GlobalNode,
 	balances cstate.StateContextI,
 ) (string, error) {
+	if err := cstate.WithActivation(balances, "hercules",
+		func() error {
+			return errors.New("delete sharder is disabled")
+		}, func() error {
+			return nil
+		}); err != nil {
+		return "", err
+	}
+
+	if err := smartcontractinterface.AuthorizeWithOwner("delete_sharder", func() bool {
+		return gn.MustBase().OwnerId == txn.ClientID
+	}); err != nil {
+		return "", err
+	}
+
 	if !config.Configuration().IsViewChangeEnabled() {
 		return "", common.NewError("delete_sharder", "view change is disabled")
 	}

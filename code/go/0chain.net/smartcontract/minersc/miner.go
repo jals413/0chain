@@ -2,6 +2,7 @@ package minersc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"0chain.net/smartcontract/dto"
@@ -10,6 +11,7 @@ import (
 
 	"0chain.net/chaincore/chain/state"
 	cstate "0chain.net/chaincore/chain/state"
+	"0chain.net/chaincore/smartcontractinterface"
 	"0chain.net/chaincore/threshold/bls"
 	"0chain.net/chaincore/transaction"
 	"0chain.net/core/common"
@@ -82,6 +84,23 @@ func (rnr *RegisterNodeSCRequest) Decode(data []byte) error {
 func (msc *MinerSmartContract) VCAdd(t *transaction.Transaction,
 	inputData []byte, gn *GlobalNode, balances cstate.StateContextI,
 ) (resp string, err error) {
+	if err = cstate.WithActivation(balances, "hercules",
+		func() error {
+			return errors.New("vc_add SC is not active")
+		}, func() error {
+			return nil
+		}); err != nil {
+		return "", err
+	}
+
+	// TODO: only chain owner can register nodes
+	if err := smartcontractinterface.AuthorizeWithOwner("vc_add", func() bool {
+		gnb := gn.MustBase()
+		return gnb.OwnerId == t.ClientID
+	}); err != nil {
+		return "", err
+	}
+
 	if !config.Configuration().IsViewChangeEnabled() {
 		return "", common.NewError("vc_add", "view change is disabled")
 	}
@@ -252,12 +271,27 @@ func (msc *MinerSmartContract) DeleteMiner(
 	gn *GlobalNode,
 	balances cstate.StateContextI,
 ) (string, error) {
+	err := cstate.WithActivation(balances, "hercules", func() error {
+		return errors.New("delete miner is disabled")
+	}, func() error {
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if err := smartcontractinterface.AuthorizeWithOwner("delete_miner", func() bool {
+		return gn.MustBase().OwnerId == txn.ClientID
+	}); err != nil {
+		return "", err
+	}
+
 	if !config.Configuration().IsViewChangeEnabled() {
 		return "", common.NewError("delete_miner", "view change is disabled")
 	}
 
 	var deleteMiner = NewMinerNode()
-	var err error
 	if err = deleteMiner.Decode(inputData); err != nil {
 		return "", common.NewErrorf("delete_miner", "decoding request: %v", err)
 	}
