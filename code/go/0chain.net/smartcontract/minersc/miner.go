@@ -84,15 +84,6 @@ func (rnr *RegisterNodeSCRequest) Decode(data []byte) error {
 func (msc *MinerSmartContract) VCAdd(t *transaction.Transaction,
 	inputData []byte, gn *GlobalNode, balances cstate.StateContextI,
 ) (resp string, err error) {
-	if err = cstate.WithActivation(balances, "hercules",
-		func() error {
-			return errors.New("vc_add SC is not active")
-		}, func() error {
-			return nil
-		}); err != nil {
-		return "", err
-	}
-
 	// TODO: only chain owner can register nodes
 	if err := smartcontractinterface.AuthorizeWithOwner("vc_add", func() bool {
 		gnb := gn.MustBase()
@@ -182,7 +173,7 @@ func (msc *MinerSmartContract) AddMiner(t *transaction.Transaction,
 
 	newMiner.Settings.MinStake = gn.MustBase().MinStakePerDelegate
 
-	if err := cstate.WithActivation(balances, "hercules", func() error {
+	if err := cstate.WithActivation(balances, "hermes", func() error {
 		magicBlockMiners := balances.GetChainCurrentMagicBlock().Miners
 		if magicBlockMiners == nil {
 			return common.NewError("add_miner", "magic block miners nil")
@@ -271,7 +262,7 @@ func (msc *MinerSmartContract) DeleteMiner(
 	gn *GlobalNode,
 	balances cstate.StateContextI,
 ) (string, error) {
-	err := cstate.WithActivation(balances, "hercules", func() error {
+	err := cstate.WithActivation(balances, "hermes", func() error {
 		return errors.New("delete miner is disabled")
 	}, func() error {
 		return nil
@@ -524,7 +515,7 @@ func getMinerNode(id string, state cstate.StateContextI) (*MinerNode, error) {
 		return mn, nil
 	}
 
-	return nil, cstate.WithActivation(state, "hercules", func() error {
+	return nil, cstate.WithActivation(state, "hermes", func() error {
 		return fmt.Errorf("provider is %s should be %s", mn.ProviderType, spenum.Miner)
 	}, func() error {
 		return common.NewErrorf(ErrWrongProviderTypeCode, "provider is %s should be %s", mn.ProviderType, spenum.Miner)

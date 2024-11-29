@@ -143,7 +143,6 @@ func initSettingName() {
 	SettingName[CostSharderKeep] = "cost.sharder_keep"
 	SettingName[CostKillMiner] = "cost.kill_miner"
 	SettingName[CostKillSharder] = "cost.kill_sharder"
-	SettingName[CostVCAdd] = "cost.vc_add"
 	SettingName[VCStartRounds] = "vc_rounds.start"
 	SettingName[VCContributeRounds] = "vc_rounds.contribute"
 	SettingName[VCShareRounds] = "vc_rounds.share"
@@ -220,7 +219,7 @@ func initGlobalNodeVCRounds(g2 *globalNodeV2) {
 }
 
 func (gn *GlobalNode) setInt(balances cstate.StateContextI, key string, change int) error {
-	return cstate.WithActivation(balances, "hercules", func() error {
+	return cstate.WithActivation(balances, "hermes", func() error {
 		return gn.setIntBase(key, change)
 	}, func() error {
 		switch gn.GetVersion() {
@@ -466,7 +465,7 @@ func (gn *GlobalNode) set(balances cstate.StateContextI, key string, change stri
 	}
 
 	if isVCPRounds(key) {
-		if err := cstate.WithActivation(balances, "hercules", func() error {
+		if err := cstate.WithActivation(balances, "hermes", func() error {
 			return fmt.Errorf("unsupported key %v", key)
 		}, func() error {
 			return nil
