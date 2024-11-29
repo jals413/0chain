@@ -385,13 +385,15 @@ type UserNode struct {
 }
 
 func NewUserNode(id string) *UserNode {
+	id = strings.ToLower(id)
 	return &UserNode{
 		ID: id,
 	}
 }
 
 func (un *UserNode) GetKey() datastore.Key {
-	return fmt.Sprintf("%s:%s:%s", ADDRESS, UserNodeType, un.ID)
+	id := strings.ToLower(un.ID)
+	return fmt.Sprintf("%s:%s:%s", ADDRESS, UserNodeType, id)
 }
 
 func (un *UserNode) GetHash() string {
