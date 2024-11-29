@@ -130,7 +130,7 @@ func addMockStakePools(clients []string, ctx cstate.StateContextI) {
 func addMockUserNodes(clients []string, balances cstate.StateContextI) {
 	for _, clientId := range clients {
 		un := NewUserNode(clientId)
-		_, _ = balances.InsertTrieNode(un.GetKey(), un)
+		_, _ = balances.InsertTrieNode(un.GetKey(balances), un)
 	}
 }
 
