@@ -143,7 +143,6 @@ func initSettingName() {
 	SettingName[CostSharderKeep] = "cost.sharder_keep"
 	SettingName[CostKillMiner] = "cost.kill_miner"
 	SettingName[CostKillSharder] = "cost.kill_sharder"
-	SettingName[CostVCAdd] = "cost.vc_add"
 	SettingName[VCStartRounds] = "vc_rounds.start"
 	SettingName[VCContributeRounds] = "vc_rounds.contribute"
 	SettingName[VCShareRounds] = "vc_rounds.share"
