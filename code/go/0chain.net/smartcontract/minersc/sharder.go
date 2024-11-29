@@ -245,7 +245,7 @@ func getSharderNode(
 		return nil, err
 	}
 	if sn.ProviderType != spenum.Sharder {
-		err := cstate.WithActivation(balances, "hercules", func() error {
+		err := cstate.WithActivation(balances, "hermes", func() error {
 			return fmt.Errorf("provider is %s should be %s", sn.ProviderType, spenum.Blobber)
 		}, func() error {
 			return common.NewErrorf(ErrWrongProviderTypeCode, "provider is %s should be %s", sn.ProviderType, spenum.Sharder)
@@ -316,7 +316,7 @@ func (msc *MinerSmartContract) sharderKeep(_ *transaction.Transaction,
 		return string(newSharder.Encode()), nil
 	}
 
-	if err := cstate.WithActivation(balances, "hercules", func() error {
+	if err := cstate.WithActivation(balances, "hermes", func() error {
 		return nil
 	}, func() error {
 		// check if the sharder is in MB
