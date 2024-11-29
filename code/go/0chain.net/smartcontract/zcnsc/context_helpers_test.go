@@ -101,7 +101,7 @@ func MakeMockStateContextWithoutAutorizers() *mockStateContext {
 	ctx.userNodes = make(map[string]*UserNode)
 	for _, client := range clients {
 		userNode := createUserNode(client)
-		ctx.userNodes[userNode.GetKey(ctx)] = userNode
+		ctx.userNodes[userNode.GetKey()] = userNode
 	}
 
 	ctx.block = block.NewBlock("", 0)

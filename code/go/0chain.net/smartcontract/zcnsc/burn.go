@@ -1,15 +1,14 @@
 package zcnsc
 
 import (
-	"fmt"
-
 	cstate "0chain.net/chaincore/chain/state"
-	"0chain.net/smartcontract/dbs/event"
-
 	"0chain.net/chaincore/state"
 	"0chain.net/chaincore/transaction"
 	"0chain.net/core/common"
+	"0chain.net/smartcontract/dbs/event"
+	"fmt"
 	"github.com/0chain/common/core/logging"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -68,6 +67,15 @@ func (zcn *ZCNSmartContract) Burn(
 		err = common.NewError(code, "ethereum address is required, "+info)
 		logging.Logger.Error(err.Error(), zap.Error(err))
 		return
+	}
+
+	if actErr := cstate.WithActivation(ctx, "hermes", func() error {
+		return nil
+	}, func() error {
+		payload.EthereumAddress = ethcommon.HexToAddress(payload.EthereumAddress).Hex()
+		return nil
+	}); actErr != nil {
+		return "", actErr
 	}
 
 	// get user node

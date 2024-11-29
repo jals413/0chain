@@ -390,14 +390,7 @@ func NewUserNode(id string) *UserNode {
 	}
 }
 
-func (un *UserNode) GetKey(balances cstate.StateContextI) datastore.Key {
-	_ = cstate.WithActivation(balances, "hermes", func() error {
-		return nil
-	}, func() error {
-		un.ID = strings.ToLower(un.ID)
-		return nil
-	})
-
+func (un *UserNode) GetKey() datastore.Key {
 	return fmt.Sprintf("%s:%s:%s", ADDRESS, UserNodeType, un.ID)
 }
 
@@ -420,6 +413,6 @@ func (un *UserNode) Decode(input []byte) error {
 }
 
 func (un *UserNode) Save(balances cstate.StateContextI) (err error) {
-	_, err = balances.InsertTrieNode(un.GetKey(balances), un)
+	_, err = balances.InsertTrieNode(un.GetKey(), un)
 	return
 }

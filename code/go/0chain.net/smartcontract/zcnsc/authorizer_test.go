@@ -67,7 +67,7 @@ func Test_Basic_GetUserNode_ReturnsUserNode(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, node)
 	require.Equal(t, clientID, node.ID)
-	key := node.GetKey(ctx)
+	key := node.GetKey()
 	require.Equal(t, ADDRESS+":usernode:"+clientID, key)
 }
 
