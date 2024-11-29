@@ -271,7 +271,7 @@ func (msc *MinerSmartContract) DeleteMiner(
 	gn *GlobalNode,
 	balances cstate.StateContextI,
 ) (string, error) {
-	err := cstate.WithActivation(balances, "hercules", func() error {
+	err := cstate.WithActivation(balances, "hermes", func() error {
 		return errors.New("delete miner is disabled")
 	}, func() error {
 		return nil
