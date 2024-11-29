@@ -1,10 +1,10 @@
 package zcnsc
 
 import (
-	"fmt"
-
 	"0chain.net/core/config"
 	"0chain.net/smartcontract/provider"
+	"fmt"
+	"strings"
 
 	"0chain.net/smartcontract/stakepool/spenum"
 	"github.com/0chain/common/core/util"
@@ -40,6 +40,14 @@ func GetAuthorizerNode(id string, ctx state.StateContextI) (*AuthorizerNode, err
 
 // GetUserNode returns error if node not found
 func GetUserNode(id string, ctx state.StateContextI) (*UserNode, error) {
+	if actErr := state.WithActivation(ctx, "hermes", func() error {
+		return nil
+	}, func() error {
+		id = strings.ToLower(id)
+		return nil
+	}); actErr != nil {
+		return nil, actErr
+	}
 	node := NewUserNode(id)
 	err := ctx.GetTrieNode(node.GetKey(), node)
 	switch err {

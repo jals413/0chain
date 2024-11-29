@@ -385,15 +385,13 @@ type UserNode struct {
 }
 
 func NewUserNode(id string) *UserNode {
-	id = strings.ToLower(id)
 	return &UserNode{
 		ID: id,
 	}
 }
 
 func (un *UserNode) GetKey() datastore.Key {
-	id := strings.ToLower(un.ID)
-	return fmt.Sprintf("%s:%s:%s", ADDRESS, UserNodeType, id)
+	return fmt.Sprintf("%s:%s:%s", ADDRESS, UserNodeType, un.ID)
 }
 
 func (un *UserNode) GetHash() string {
@@ -415,6 +413,14 @@ func (un *UserNode) Decode(input []byte) error {
 }
 
 func (un *UserNode) Save(balances cstate.StateContextI) (err error) {
+	if actErr := cstate.WithActivation(balances, "hermes", func() error {
+		return nil
+	}, func() error {
+		un.ID = strings.ToLower(un.ID)
+		return nil
+	}); actErr != nil {
+		return actErr
+	}
 	_, err = balances.InsertTrieNode(un.GetKey(), un)
 	return
 }
