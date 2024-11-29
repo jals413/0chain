@@ -209,7 +209,7 @@ func (msc *MinerSmartContract) adjustViewChange(gn *GlobalNode,
 		waited++
 	}
 
-	if err := cstate.WithActivation(balances, "hercules",
+	if err := cstate.WithActivation(balances, "hermes",
 		func() error {
 			err = dmn.reduceNodes(true, gn, balances)
 			if err == nil && waited < dmn.K {
