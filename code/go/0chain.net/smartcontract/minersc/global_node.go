@@ -563,3 +563,17 @@ func (gn *GlobalNode) CopyFrom(v interface{}) bool {
 	*gn = *ccg
 	return true
 }
+
+func NewGlobalNode(owner string, cost map[string]int) *GlobalNode {
+	gnV2 := &globalNodeV2{
+		globalNodeV1: globalNodeV1{
+			OwnerId: owner,
+			Cost:    cost,
+		},
+	}
+
+	var gn = &GlobalNode{}
+	gn.SetEntity(gnV2)
+
+	return gn
+}
