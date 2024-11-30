@@ -231,6 +231,20 @@ func (bp *BurnPayload) Decode(input []byte) error {
 	return err
 }
 
+type RepairEthWallets struct {
+	EthereumAddresses []string `json:"ethereum_addresses"`
+}
+
+func (rew RepairEthWallets) Encode() []byte {
+	buff, _ := json.Marshal(rew)
+	return buff
+}
+
+func (rew RepairEthWallets) Decode(input []byte) error {
+	err := json.Unmarshal(input, &rew)
+	return err
+}
+
 // ------- UpdateAuthorizerStakePoolPayload ------------
 
 type UpdateAuthorizerStakePoolPayload struct {

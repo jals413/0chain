@@ -124,3 +124,61 @@ func (zcn *ZCNSmartContract) Burn(
 	resp = string(response.Encode())
 	return
 }
+
+func (zcn *ZCNSmartContract) RepairEthAddressMerge(trans *transaction.Transaction,
+	inputData []byte,
+	ctx cstate.StateContextI) (resp string, err error) {
+	const (
+		code = "failed to repair"
+	)
+
+	var (
+		info = fmt.Sprintf(
+			"transaction: %s, clientID: %s, payload: %s",
+			trans.Hash,
+			trans.ClientID,
+			string(inputData),
+		)
+	)
+
+	payload := &RepairEthWallets{}
+	err = payload.Decode(inputData)
+	if err != nil {
+		msg := fmt.Sprintf("payload decode error: %v, %s", err, info)
+		err = common.NewError(code, msg)
+		logging.Logger.Error(msg, zap.Error(err))
+		return
+	}
+
+	burnNonce := int64(0)
+
+	for _, ea := range payload.EthereumAddresses {
+		un, err := GetUserNode(ea, ctx)
+		if err != nil {
+			err = common.NewError(code, fmt.Sprintf("get user node error (%v), %s", err, info))
+			logging.Logger.Error(err.Error(), zap.Error(err))
+			return
+		}
+
+		burnNonce += un.BurnNonce
+	}
+
+	commonAddress := ethcommon.HexToAddress(payload.EthereumAddresses[0]).Hex()
+
+	un, err := GetUserNode(commonAddress, ctx)
+	if err != nil {
+		err = common.NewError(code, fmt.Sprintf("get user node error (%v), %s", err, info))
+		logging.Logger.Error(err.Error(), zap.Error(err))
+		return
+	}
+
+	un.BurnNonce = burnNonce
+
+	err = un.Save(ctx)
+	if err != nil {
+		err = errors.Wrap(err, fmt.Sprintf("%s, user node failed to be saved, %s", code, info))
+		return
+	}
+
+	return "repair success", nil
+}
