@@ -11,6 +11,7 @@ import (
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"strings"
 )
 
 // Burn inputData - is a BurnPayload.
@@ -141,7 +142,7 @@ func (zcn *ZCNSmartContract) RepairEthAddressMerge(trans *transaction.Transactio
 		)
 	)
 
-	payload := &RepairEthWallets{}
+	payload := &BurnPayload{}
 	err = payload.Decode(inputData)
 	if err != nil {
 		msg := fmt.Sprintf("payload decode error: %v, %s", err, info)
@@ -150,31 +151,26 @@ func (zcn *ZCNSmartContract) RepairEthAddressMerge(trans *transaction.Transactio
 		return
 	}
 
-	burnNonce := int64(0)
-
-	for _, ea := range payload.EthereumAddresses {
-		un, err := GetUserNode(ea, ctx)
-		if err != nil {
-			err = common.NewError(code, fmt.Sprintf("get user node error (%v), %s", err, info))
-			logging.Logger.Error(err.Error(), zap.Error(err))
-			return
-		}
-
-		burnNonce += un.BurnNonce
-	}
-
-	commonAddress := ethcommon.HexToAddress(payload.EthereumAddresses[0]).Hex()
-
-	un, err := GetUserNode(commonAddress, ctx)
+	lowerCaseEthAddress := strings.ToLower(payload.EthereumAddress)
+	un, err := GetUserNode(lowerCaseEthAddress, ctx)
 	if err != nil {
 		err = common.NewError(code, fmt.Sprintf("get user node error (%v), %s", err, info))
 		logging.Logger.Error(err.Error(), zap.Error(err))
 		return
 	}
+	burnNonce := un.BurnNonce
 
-	un.BurnNonce = burnNonce
+	correctedEthAddress := ethcommon.HexToAddress(payload.EthereumAddress).Hex()
 
-	err = un.Save(ctx)
+	correctedUserNode, err := GetUserNode(correctedEthAddress, ctx)
+	if err != nil {
+		err = common.NewError(code, fmt.Sprintf("get user node error (%v), %s", err, info))
+		logging.Logger.Error(err.Error(), zap.Error(err))
+		return
+	}
+	correctedUserNode.BurnNonce += burnNonce
+
+	err = correctedUserNode.Save(ctx)
 	if err != nil {
 		err = errors.Wrap(err, fmt.Sprintf("%s, user node failed to be saved, %s", code, info))
 		return
