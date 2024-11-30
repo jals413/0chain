@@ -324,7 +324,7 @@ func TestExecuteSmartContract(t *testing.T) {
 	stateContextIMock.On("GetTrieNode",
 		mock.AnythingOfType("string"),
 		mock.MatchedBy(func(v *minersc.GlobalNode) bool {
-			gn := &minersc.GlobalNode{}
+			gn := minersc.NewGlobalNode("", map[string]int{})
 			blob, err := gn.MarshalMsg(nil)
 			require.NoError(t, err)
 

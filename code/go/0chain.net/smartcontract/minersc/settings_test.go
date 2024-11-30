@@ -46,7 +46,6 @@ func enableHardForks(t *testing.T, tb *mocks.StateContextI) {
 }
 
 func TestUpdateSettings(t *testing.T) {
-	t.Skipf("TODO: Fix this test")
 	type args struct {
 		msc      *MinerSmartContract
 		txn      *transaction.Transaction
