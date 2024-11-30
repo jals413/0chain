@@ -18,11 +18,9 @@ func TestZcnBenchmarkRestTests(t *testing.T) {
 	mockSigScheme.On("Sign", mock.Anything).Return("", nil)
 	common.ConfigRateLimits()
 
-	testEndpoints := 1
-
 	require.EqualValues(
 		t,
-		len(GetEndpoints(rest.NewRestHandler(nil)))-testEndpoints,
+		len(GetEndpoints(rest.NewRestHandler(nil))),
 		len(BenchmarkRestTests(benchmark.MockBenchData, mockSigScheme).Benchmarks),
 	)
 }
