@@ -40,8 +40,10 @@ func enableHardForks(t *testing.T, tb *mocks.StateContextI) {
 
 	for _, name := range hardForks {
 		h := chainstate.NewHardFork(name, 0)
-		tb.On("GetTrieNode", h.GetKey(), mock.Anything).Return(nil, nil).Once()
 		tb.On("InsertTrieNode", h.GetKey(), h).Return("", nil).Once()
+		if _, err := tb.InsertTrieNode(h.GetKey(), h); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -68,9 +70,7 @@ func TestUpdateSettings(t *testing.T) {
 			ClientID: p.client,
 		}
 
-		mockBlock := &block.Block{}
-		mockBlock.Round = 0
-		balances.On("GetBlock").Return(mockBlock).Maybe()
+		balances.On("GetBlock", mock.Anything, mock.Anything).Return(&block.Block{}, nil)
 
 		balances.On(
 			"InsertTrieNode",
