@@ -74,7 +74,6 @@ func TestChain_GetLatestFinalizedMagicBlockRound(t *testing.T) {
 			mb.Miners = node.NewPool(node.NodeTypeMiner)
 			mb.Sharders = node.NewPool(node.NodeTypeSharder)
 			chain.SetMagicBlock(mb)
-
 			lfmb.MagicBlock = mb
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -88,6 +87,7 @@ func TestChain_GetLatestFinalizedMagicBlockRound(t *testing.T) {
 				chain.magicBlockStartingRoundsMap[r] = &block.Block{
 					HashIDField: datastore.HashIDField{Hash: strconv.FormatInt(r, 10)},
 				}
+				chain.magicBlockStartingRounds.Add(r)
 			}
 
 			for _, checkRound := range test.CheckRounds {

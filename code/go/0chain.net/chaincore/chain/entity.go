@@ -199,7 +199,7 @@ type Chain struct {
 	RoundF          round.RoundFactory
 
 	magicBlockStartingRoundsMap map[int64]*block.Block // block MB by starting round VC
-	magicBlockStaringRounds     *ringbuffer.RingBuffer
+	magicBlockStartingRounds    *ringbuffer.RingBuffer
 
 	EventDb    *event.EventDb
 	eventMutex *sync.RWMutex
@@ -1149,7 +1149,7 @@ func (c *Chain) Initialize() {
 	c.BlockChain = ring.New(10000)
 	c.minersStake = make(map[datastore.Key]uint64)
 	c.magicBlockStartingRoundsMap = make(map[int64]*block.Block)
-	c.magicBlockStaringRounds = ringbuffer.New(magicBlockStartingRoundsMax)
+	c.magicBlockStartingRounds = ringbuffer.New(magicBlockStartingRoundsMax)
 	c.MagicBlockStorage = round.NewRoundStartingStorage()
 	c.OnBlockAdded = func(b *block.Block) {
 	}
@@ -2499,7 +2499,7 @@ func (c *Chain) SetLatestFinalizedMagicBlock(b *block.Block) {
 
 	c.lfmbMutex.Lock()
 	c.magicBlockStartingRoundsMap[b.MagicBlock.StartingRound] = b
-	c.magicBlockStaringRounds.Add(b.StartingRound)
+	c.magicBlockStartingRounds.Add(b.StartingRound)
 	c.lfmbMutex.Unlock()
 
 	if latest == nil || b.StartingRound >= latest.StartingRound {
