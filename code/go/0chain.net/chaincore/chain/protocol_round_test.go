@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"0chain.net/chaincore/node"
 	"context"
 	"strconv"
 	"testing"
@@ -68,6 +69,14 @@ func TestChain_GetLatestFinalizedMagicBlockRound(t *testing.T) {
 				getLFMB:                     make(chan *block.Block),
 				updateLFMB:                  make(chan *updateLFMBWithReply, 1),
 			}
+			chain.Initialize()
+			mb := block.NewMagicBlock()
+			mb.Miners = node.NewPool(node.NodeTypeMiner)
+			mb.Sharders = node.NewPool(node.NodeTypeSharder)
+			chain.SetMagicBlock(mb)
+
+			lfmb.MagicBlock = mb
+
 			ctx, cancel := context.WithCancel(context.Background())
 			doneC := make(chan struct{})
 			go func() {
