@@ -142,7 +142,7 @@ func (zcn *ZCNSmartContract) RepairEthAddressMerge(trans *transaction.Transactio
 		)
 	)
 
-	payload := &BurnPayload{}
+	payload := &RepairEthAddressPayload{}
 	err = payload.Decode(inputData)
 	if err != nil {
 		msg := fmt.Sprintf("payload decode error: %v, %s", err, info)
@@ -152,23 +152,20 @@ func (zcn *ZCNSmartContract) RepairEthAddressMerge(trans *transaction.Transactio
 	}
 
 	lowerCaseEthAddress := strings.ToLower(payload.EthereumAddress)
-	un, err := GetUserNode(lowerCaseEthAddress, ctx)
-	if err != nil {
-		err = common.NewError(code, fmt.Sprintf("get user node error (%v), %s", err, info))
+	if err = DeleteUserNodeIfExist(lowerCaseEthAddress, ctx); err != nil {
+		err = common.NewError(code, fmt.Sprintf("delete user node error (%v), %s", err, info))
 		logging.Logger.Error(err.Error(), zap.Error(err))
 		return
 	}
-	burnNonce := un.BurnNonce
 
 	correctedEthAddress := ethcommon.HexToAddress(payload.EthereumAddress).Hex()
-
 	correctedUserNode, err := GetUserNode(correctedEthAddress, ctx)
 	if err != nil {
 		err = common.NewError(code, fmt.Sprintf("get user node error (%v), %s", err, info))
 		logging.Logger.Error(err.Error(), zap.Error(err))
 		return
 	}
-	correctedUserNode.BurnNonce += burnNonce
+	correctedUserNode.BurnNonce = payload.Nonce
 
 	err = correctedUserNode.Save(ctx)
 	if err != nil {

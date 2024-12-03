@@ -48,6 +48,17 @@ func GetUserNode(id string, ctx state.StateContextI) (*UserNode, error) {
 	}
 }
 
+// DeleteUserNodeIfExist returns error if node not found
+func DeleteUserNodeIfExist(id string, ctx state.StateContextI) error {
+	node := NewUserNode(id)
+	err := ctx.GetTrieNode(node.GetKey(), node)
+	if err != nil {
+		return nil
+	}
+	_, err = ctx.DeleteTrieNode(node.GetKey())
+	return err
+}
+
 func GetGlobalSavedNode(ctx state.CommonStateContextI) (*GlobalNode, error) {
 	node := &GlobalNode{ID: ADDRESS}
 	err := ctx.GetTrieNode(node.GetKey(), node)
