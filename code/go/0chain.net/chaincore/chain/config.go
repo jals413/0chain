@@ -483,7 +483,6 @@ func (c *ConfigImpl) FromViper() error {
 	conf := c.conf
 	conf.IsStateEnabled = viper.GetBool("server_chain.state.enabled")
 	conf.IsDkgEnabled = viper.GetBool("server_chain.dkg")
-	conf.IsViewChangeEnabled = viper.GetBool("server_chain.view_change")
 	conf.IsBlockRewardsEnabled = viper.GetBool("server_chain.block_rewards")
 	conf.IsStorageEnabled = viper.GetBool("server_chain.smart_contract.storage")
 	conf.IsFaucetEnabled = viper.GetBool("server_chain.smart_contract.faucet")

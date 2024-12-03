@@ -594,8 +594,8 @@ func (c *Chain) GetLatestFinalizedMagicBlockRound(rn int64) *block.Block {
 	rn = mbRoundOffset(rn) // round number with mb offset
 	c.lfmbMutex.RLock()
 	if len(c.magicBlockStartingRoundsMap) > 0 {
-		r := c.magicBlockStaringRounds.Prev()
-		ringSize := c.magicBlockStaringRounds.Len()
+		r := c.magicBlockStartingRounds.Prev()
+		ringSize := c.magicBlockStartingRounds.Len()
 		for i := 0; i < ringSize; i++ {
 			startRound := r.Value.(int64)
 			r = r.Prev()

@@ -68,7 +68,6 @@ const (
 	CostSharderKeep
 	CostKillMiner
 	CostKillSharder
-	CostVCAdd
 	HealthCheckPeriod
 	VCStartRounds
 	VCContributeRounds
@@ -199,7 +198,6 @@ func initSettings() {
 		CostSharderKeep.String():             {CostSharderKeep, config.Cost},
 		CostKillMiner.String():               {CostKillMiner, config.Cost},
 		CostKillSharder.String():             {CostKillSharder, config.Cost},
-		CostVCAdd.String():                   {CostVCAdd, config.Cost},
 		VCStartRounds.String():               {VCStartRounds, config.Int},
 		VCContributeRounds.String():          {VCContributeRounds, config.Int},
 		VCShareRounds.String():               {VCShareRounds, config.Int},

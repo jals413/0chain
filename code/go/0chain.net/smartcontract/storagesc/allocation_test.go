@@ -98,7 +98,6 @@ func TestSelectBlobbers(t *testing.T) {
 		StorageSmartContract, storageAllocationBase, StorageNodes, chainState.StateContextI) {
 		var balances = &mocks.StateContextI{}
 		var ssc = StorageSmartContract{
-
 			SmartContract: sci.NewSC(ADDRESS),
 		}
 		var sa = storageAllocationBase{
@@ -904,6 +903,11 @@ func enableHardForks(t *testing.T, tb chainState.StateContextI) {
 	}
 
 	h = chainState.NewHardFork("hercules", 0)
+	if _, err := tb.InsertTrieNode(h.GetKey(), h); err != nil {
+		t.Fatal(err)
+	}
+
+	h = chainState.NewHardFork("hermes", 0)
 	if _, err := tb.InsertTrieNode(h.GetKey(), h); err != nil {
 		t.Fatal(err)
 	}
