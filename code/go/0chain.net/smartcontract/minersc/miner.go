@@ -343,6 +343,24 @@ func (msc *MinerSmartContract) deleteNode(
 		zap.String("node type", nodeType.String()),
 		zap.String("id", deleteNode.ID))
 
+	// check if the node is in register list
+	rids, err := getRegisterNodes(balances, nodeType)
+	if err != nil {
+		return nil, err
+	}
+
+	for idx, rid := range rids {
+		if rid == deleteNode.ID {
+			// delete from register list
+			rids = append(rids[:idx], rids[idx+1:]...)
+			break
+		}
+	}
+
+	if err = updateRegisterNodes(balances, nodeType, rids); err != nil {
+		return nil, err
+	}
+
 	err = saveDeleteNodeID(balances, nodeType, deleteNode.ID)
 	if err != nil {
 		return nil, err
