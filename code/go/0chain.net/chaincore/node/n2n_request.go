@@ -202,8 +202,6 @@ func RequestEntityHandler(uri string, options *SendOptions, entityMetadata datas
 			if options.Timeout > 0 {
 				timeout = options.Timeout
 			}
-
-			timeout = 10 * time.Minute
 			u := provider.GetN2NURLBase() + uri
 			var data io.Reader
 			if params != nil {

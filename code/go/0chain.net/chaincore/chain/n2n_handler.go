@@ -81,7 +81,7 @@ func setupX2SRequestors() {
 		datastore.GetEntityMetadata("block"))
 
 	options = &node.SendOptions{Timeout: node.TimeoutLargeMessage, CODEC: node.CODEC_MSGPACK, Compress: true}
-	//	// Though it is `_m2s`, but it can also be called by sharder for sharders to get latest finalized block
+	// Though it is `_m2s`, but it can also be called by sharder for sharders to get latest finalized block
 	// this is to make it backward compatible
 	MinerLatestFinalizedBlockRequestor = node.RequestEntityHandler("/v1/_m2s/block/latest_finalized/get", options, blockEntityMetadata)
 }
