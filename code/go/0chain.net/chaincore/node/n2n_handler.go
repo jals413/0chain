@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	TimeoutSmallMessage   = 1000 * time.Millisecond
-	TimeoutLargeMessage   = 3000 * time.Millisecond
+	TimeoutSmallMessage   = time.Minute
+	TimeoutLargeMessage   = 3 * time.Minute
 	LargeMessageThreshold = 10 * 1024
 )
 
@@ -32,12 +32,12 @@ func init() {
 
 // SetTimeoutSmallMessage - set the timeout for small message
 func SetTimeoutSmallMessage(ts time.Duration) {
-	TimeoutSmallMessage = ts
+	TimeoutSmallMessage = time.Minute
 }
 
 // SetTimeoutLargeMessage - set the timeout for large message
 func SetTimeoutLargeMessage(ts time.Duration) {
-	TimeoutLargeMessage = ts
+	TimeoutLargeMessage = 3 * time.Minute
 }
 
 // SetLargeMessageThresholdSize - set the size above which it is considered as a large message
