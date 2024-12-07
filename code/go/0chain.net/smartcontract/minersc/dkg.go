@@ -607,6 +607,8 @@ func (msc *MinerSmartContract) createDKGMinersForContribute(
 		return err
 	}
 
+	logging.Logger.Info("[mvc] createDKGMinersForContribute success")
+
 	return nil
 }
 
