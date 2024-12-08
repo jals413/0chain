@@ -964,6 +964,7 @@ func (c *Chain) GetMagicBlock(round int64) *block.MagicBlock {
 	c.mbMutex.RUnlock()
 	mb := entity.(*block.MagicBlock)
 	logging.Logger.Debug("[mvc] GetMagicBlock",
+		zap.Any("mb", mb),
 		zap.Int64("round", round),
 		zap.Int64("mb_starting_round", mb.StartingRound),
 		zap.String("mb_hash", mb.Hash),
