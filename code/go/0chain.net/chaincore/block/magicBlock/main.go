@@ -7,7 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"go.uber.org/zap"
 	"log"
 	"math"
 	"os"
@@ -79,12 +78,11 @@ func (cmd *cmdMagicBlock) setupBlock() {
 }
 
 func (cmd *cmdMagicBlock) setupNodes() error {
-	logging.Logger.Info("Jayash setupNodes", zap.Any("Miners", cmd.yml.Miners), zap.Any("Sharders", cmd.yml.Sharders))
 	for _, v := range cmd.yml.Miners {
 		cmd.yml.MinersMap[v.ID] = v
 		v.CreationDate = common.Now()
 		v.Type = cmd.block.Miners.Type
-		if err := cmd.block.Miners.AddNode(&v.Node); err != nil {
+		if err := cmd.block.Miners.AddNode(&v.Node, "Miner : func (cmd *cmdMagicBlock) setupNodes() error"); err != nil {
 			return err
 		}
 	}
@@ -92,13 +90,10 @@ func (cmd *cmdMagicBlock) setupNodes() error {
 		cmd.yml.ShardersMap[v.ID] = v
 		v.CreationDate = common.Now()
 		v.Type = cmd.block.Sharders.Type
-		if err := cmd.block.Sharders.AddNode(&v.Node); err != nil {
+		if err := cmd.block.Sharders.AddNode(&v.Node, "Sharder : func (cmd *cmdMagicBlock) setupNodes() error"); err != nil {
 			return err
 		}
 	}
-
-	logging.Logger.Info("Jayash nodes", zap.Any("nodes", node.CopyNodes()))
-
 	return nil
 }
 

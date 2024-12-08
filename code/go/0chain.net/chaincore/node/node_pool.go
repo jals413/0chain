@@ -65,8 +65,8 @@ func (np *Pool) Size() int {
 }
 
 // AddNode - add a node to the pool
-func (np *Pool) AddNode(node *Node) error {
-	logging.Logger.Info("Jayash addNode", zap.Any("addNode", node))
+func (np *Pool) AddNode(node *Node, from ...string) error {
+	logging.Logger.Info("Jayash addNode", zap.Any("addNode", node), zap.Any("from", from))
 
 	if np.Type != node.Type {
 		logging.Logger.Error("incorrect node type",
@@ -300,7 +300,7 @@ func (np *Pool) Clone() *Pool {
 	clone.medianNetworkTime = np.medianNetworkTime
 
 	for _, v := range np.NodesMap {
-		if err := clone.AddNode(v.Clone()); err != nil {
+		if err := clone.AddNode(v.Clone(), "func (np *Pool) Clone() *Pool {"); err != nil {
 			logging.Logger.Warn("pool clone - add cloned node failed", zap.Error(err))
 		}
 	}
