@@ -265,7 +265,7 @@ func (b *Block) Validate(_ context.Context) error {
 	logging.Logger.Info("Validating block", zap.String("hash", b.Hash), zap.String("miner_id", b.MinerID), zap.Any("node", node.CopyNodes()))
 	miner := node.GetNode(b.MinerID)
 	if miner == nil {
-		return common.NewError("unknown_miner", "Do not know this miner")
+		return common.NewError("unknown_miner", "Do not know this miner : "+b.MinerID)
 	}
 
 	b.mutexTxns.RLock()
