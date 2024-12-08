@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"go.uber.org/zap"
 	"log"
 	"math"
 	"os"
@@ -78,6 +79,7 @@ func (cmd *cmdMagicBlock) setupBlock() {
 }
 
 func (cmd *cmdMagicBlock) setupNodes() error {
+	logging.Logger.Info("Jayash setupNodes", zap.Any("Miners", cmd.yml.Miners), zap.Any("Sharders", cmd.yml.Sharders))
 	for _, v := range cmd.yml.Miners {
 		cmd.yml.MinersMap[v.ID] = v
 		v.CreationDate = common.Now()
@@ -94,6 +96,8 @@ func (cmd *cmdMagicBlock) setupNodes() error {
 			return err
 		}
 	}
+
+	logging.Logger.Info("Jayash nodes", zap.Any("nodes", node.CopyNodes()))
 
 	return nil
 }

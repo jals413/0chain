@@ -66,6 +66,8 @@ func (np *Pool) Size() int {
 
 // AddNode - add a node to the pool
 func (np *Pool) AddNode(node *Node) error {
+	logging.Logger.Info("Jayash addNode", zap.Any("addNode", node))
+
 	if np.Type != node.Type {
 		logging.Logger.Error("incorrect node type",
 			zap.String("node_type", node.Type.String()),
