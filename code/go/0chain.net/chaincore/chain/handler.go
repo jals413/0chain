@@ -837,6 +837,7 @@ func (c *Chain) printNodePool(w http.ResponseWriter, np *node.Pool) {
 	fmt.Fprintf(w, "<tr class='header'><td rowspan='2'>Set Index</td><td rowspan='2'>Node</td><td rowspan='2'>Sent</td><td rowspan='2'>Send Errors</td><td rowspan='2'>Received</td><td rowspan='2'>Last Active</td><td colspan='3' style='text-align:center'>Message Time</td><td rowspan='2'>Description</td><td colspan='4' style='text-align:center'>Remote Data</td></tr>")
 	fmt.Fprintf(w, "<tr class='header'><td>Small</td><td>Large</td><td>Large Optimal</td><td>Build Tag</td><td title='median network time'>Miners MNT</td><td>Avg Block Size</td></tr>")
 	nodes := np.CopyNodes()
+	logging.Logger.Info("printNodePool", zap.Any("np", np.Nodes), zap.Any("nodesMap", np.NodesMap), zap.Any("nodes", nodes))
 	sort.SliceStable(nodes, func(i, j int) bool {
 		return nodes[i].SetIndex < nodes[j].SetIndex
 	})
