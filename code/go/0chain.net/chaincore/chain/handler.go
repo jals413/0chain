@@ -823,8 +823,10 @@ func DiagnosticsHomepageHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "<div><div>Miners (%v)</div> - current MB starting round: (%v)", mb.Miners.Size(), mb.StartingRound)
 	}
 	sc.printNodePool(w, mb.Miners)
+	logging.Logger.Info("DiagnosticsHomepageHandler Miners", zap.Any("miners", mb.Miners))
 	fmt.Fprintf(w, "</div>")
 	fmt.Fprintf(w, "<div><div>Sharders (%v)</div>", mb.Sharders.Size())
+	logging.Logger.Info("DiagnosticsHomepageHandler Sharders", zap.Any("sharders", mb.Sharders))
 	sc.printNodePool(w, mb.Sharders)
 	fmt.Fprintf(w, "</div>")
 }
@@ -842,6 +844,7 @@ func (c *Chain) printNodePool(w http.ResponseWriter, np *node.Pool) {
 		return nodes[i].SetIndex < nodes[j].SetIndex
 	})
 	for _, nd := range nodes {
+		logging.Logger.Info("printNodePool", zap.Any("nd", nd.Info.BuildTag))
 		if nd.GetStatus() == node.NodeStatusInactive {
 			fmt.Fprintf(w, "<tr class='inactive'>")
 		} else {
