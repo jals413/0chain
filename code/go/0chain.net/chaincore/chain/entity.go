@@ -429,7 +429,7 @@ func (c *Chain) BlockWorker(ctx context.Context) {
 				}
 				// see no block in buffer to process
 				syncing = false
-				logging.Logger.Debug("process block, no blobber in buffer", zap.Int64("current round", cr))
+				logging.Logger.Debug("process block, no block in buffer", zap.Int64("current round", cr))
 
 				// see if the miner is in the MB, and if not, continue to sync blocks
 				mb := c.GetMagicBlock(cr)
@@ -964,7 +964,6 @@ func (c *Chain) GetMagicBlock(round int64) *block.MagicBlock {
 	c.mbMutex.RUnlock()
 	mb := entity.(*block.MagicBlock)
 	logging.Logger.Debug("[mvc] GetMagicBlock",
-		zap.Any("mb", mb),
 		zap.Int64("round", round),
 		zap.Int64("mb_starting_round", mb.StartingRound),
 		zap.String("mb_hash", mb.Hash),

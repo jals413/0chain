@@ -823,10 +823,8 @@ func DiagnosticsHomepageHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "<div><div>Miners (%v)</div> - current MB starting round: (%v)", mb.Miners.Size(), mb.StartingRound)
 	}
 	sc.printNodePool(w, mb.Miners)
-	logging.Logger.Info("DiagnosticsHomepageHandler Miners", zap.Any("miners", mb.Miners))
 	fmt.Fprintf(w, "</div>")
 	fmt.Fprintf(w, "<div><div>Sharders (%v)</div>", mb.Sharders.Size())
-	logging.Logger.Info("DiagnosticsHomepageHandler Sharders", zap.Any("sharders", mb.Sharders))
 	sc.printNodePool(w, mb.Sharders)
 	fmt.Fprintf(w, "</div>")
 }
@@ -839,12 +837,10 @@ func (c *Chain) printNodePool(w http.ResponseWriter, np *node.Pool) {
 	fmt.Fprintf(w, "<tr class='header'><td rowspan='2'>Set Index</td><td rowspan='2'>Node</td><td rowspan='2'>Sent</td><td rowspan='2'>Send Errors</td><td rowspan='2'>Received</td><td rowspan='2'>Last Active</td><td colspan='3' style='text-align:center'>Message Time</td><td rowspan='2'>Description</td><td colspan='4' style='text-align:center'>Remote Data</td></tr>")
 	fmt.Fprintf(w, "<tr class='header'><td>Small</td><td>Large</td><td>Large Optimal</td><td>Build Tag</td><td title='median network time'>Miners MNT</td><td>Avg Block Size</td></tr>")
 	nodes := np.CopyNodes()
-	logging.Logger.Info("printNodePool", zap.Any("np", np.Nodes), zap.Any("nodesMap", np.NodesMap), zap.Any("nodes", nodes))
 	sort.SliceStable(nodes, func(i, j int) bool {
 		return nodes[i].SetIndex < nodes[j].SetIndex
 	})
-	for idx, nd := range nodes {
-		logging.Logger.Info("printNodePool", zap.Any("nd", nd.Info.BuildTag), zap.Any("node", np.Nodes[idx].Info), zap.Any("nodeMap", np.NodesMap[nd.ID].Info))
+	for _, nd := range nodes {
 		if nd.GetStatus() == node.NodeStatusInactive {
 			fmt.Fprintf(w, "<tr class='inactive'>")
 		} else {

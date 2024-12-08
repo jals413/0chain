@@ -232,7 +232,6 @@ func (msc *MinerSmartContract) setPhaseNode(balances cstate.StateContextI,
 
 	movePhase := pn.CurrentRound-pn.StartRound >= phaseRounds[pn.Phase]
 	if !movePhase {
-		logging.Logger.Info("[mvc] setPhaseNode not move phase")
 		return nil
 	}
 
@@ -268,22 +267,14 @@ func (msc *MinerSmartContract) setPhaseNode(balances cstate.StateContextI,
 				zap.Int64("phase current round", pn.CurrentRound),
 				zap.String("move_func", funcName))
 		}
-
-		logging.Logger.Info("[mvc] setPhaseNode restart DKG success")
 		return err
 	}
 
 	logging.Logger.Debug("[mvc] setPhaseNode move phase success", zap.String("phase", pn.Phase.String()))
 	phaseFunc, ok := phaseFuncs[pn.Phase]
 	if ok {
-		logging.Logger.Info("[mvc] setPhaseNode move phase",
-			zap.String("phase", pn.Phase.String()))
 		err = phaseFunc(balances, gn)
 		if err != nil {
-			logging.Logger.Error("[mvc] setPhaseNode failed to move phase",
-				zap.Error(err),
-				zap.String("phase", pn.Phase.String()))
-
 			if cstate.ErrInvalidState(err) {
 				logging.Logger.Debug("[mvc] setPhaseNode move phase failed",
 					zap.Error(err),
@@ -301,18 +292,14 @@ func (msc *MinerSmartContract) setPhaseNode(balances cstate.StateContextI,
 					zap.Error(err),
 					zap.String("phase", pn.Phase.String()))
 			}
-
-			logging.Logger.Info("[mvc] setPhaseNode restart DKG success")
 			return err
 		}
 	}
 
 	if pn.Phase >= Phase(len(phaseRounds)-1) {
-		logging.Logger.Info("[mvc] setPhaseNode reset phase")
 		pn.Phase = 0
 		pn.Restarts = 0
 	} else {
-		logging.Logger.Info("[mvc] setPhaseNode increment phase")
 		pn.Phase++
 	}
 	pn.StartRound = pn.CurrentRound
@@ -498,7 +485,6 @@ func (msc *MinerSmartContract) createDKGMinersForContribute(
 
 	lmb := gn.prevMagicBlock(balances)
 	if lmb == nil {
-		logging.Logger.Error("failed to create dkg miners", zap.Error(fmt.Errorf("empty magic block")))
 		return common.NewErrorf("failed to create dkg miners", "empty magic block")
 	}
 
@@ -517,7 +503,6 @@ func (msc *MinerSmartContract) createDKGMinersForContribute(
 
 	toDeleteMinerIDs, err := getToDeleteMinerIDs(balances, lmb, gnb)
 	if err != nil {
-		logging.Logger.Error("failed to get delete miners list", zap.Error(err))
 		return err
 	}
 
@@ -530,8 +515,6 @@ func (msc *MinerSmartContract) createDKGMinersForContribute(
 
 		n, ok := allMinersMap[mid]
 		if !ok {
-			logging.Logger.Error("failed to create dkg miners",
-				zap.String("miner in prev MB is not in the all miners list", mid))
 			return common.NewErrorf("failed to create dkg miners",
 				"miner in prev MB is not in the all miners list: %s", mid)
 		}
@@ -542,7 +525,6 @@ func (msc *MinerSmartContract) createDKGMinersForContribute(
 	// get register miner list
 	regIDs, err := getRegisterNodes(balances, spenum.Miner)
 	if err != nil {
-		logging.Logger.Error("failed to get register miners list", zap.Error(err))
 		return common.NewErrorf("failed to create dkg miners", "get register node error: %v", err)
 	}
 
@@ -553,7 +535,6 @@ func (msc *MinerSmartContract) createDKGMinersForContribute(
 
 	dkgMinersNum := len(dkgMiners.SimpleNodes)
 	if dkgMinersNum < gnb.MinN {
-		logging.Logger.Error("[mvc] createDKGMinersForContribute, failed to create dkg miners", zap.Error(fmt.Errorf("miners num: %d < gn.Min: %c", dkgMinersNum, gnb.MinN)))
 		return common.NewErrorf("failed to create dkg miners", "miners num: %d < gn.Min: %c", dkgMinersNum, gnb.MinN)
 	}
 
@@ -572,7 +553,6 @@ func (msc *MinerSmartContract) createDKGMinersForContribute(
 
 	toDeleteShardersMap, err := getDeleteSharders(balances, lmb)
 	if err != nil {
-		logging.Logger.Error("failed to get sharder delete list", zap.Error(err))
 		return err
 	}
 
@@ -587,29 +567,18 @@ func (msc *MinerSmartContract) createDKGMinersForContribute(
 
 	addKeeps, err := getToKeepShardersIDs(balances)
 	if err != nil {
-		logging.Logger.Error("failed to get sharders keep list", zap.Error(err))
 		return err
 	}
 
 	shardersKeep = append(shardersKeep, addKeeps...)
 
 	if len(shardersKeep) < gnb.MinS {
-		logging.Logger.Error("failed to create dkg miners",
-			zap.Int("sharders number would be below gn.MinS after removing", len(shardersKeep)))
 		return common.NewError("failed to create dkg miners",
 			"sharders number would be below gn.MinS after removing")
 	}
 
 	// TODO: check the sharder remove list, and adjust the keep list
-	err = updateShardersKeepList(balances, shardersKeep)
-	if err != nil {
-		logging.Logger.Error("failed to update sharders keep list", zap.Error(err))
-		return err
-	}
-
-	logging.Logger.Info("[mvc] createDKGMinersForContribute success")
-
-	return nil
+	return updateShardersKeepList(balances, shardersKeep)
 }
 
 // ErrProviderType checks if the error is a provider type error
@@ -626,7 +595,6 @@ func (msc *MinerSmartContract) widdleDKGMinersForShare(
 	balances cstate.StateContextI, gn *GlobalNode) error {
 
 	// Note: we will not change the dkg miners, so do nothing here
-
 	return nil
 
 	// dkgMiners, err := getDKGMinersList(balances)
@@ -737,7 +705,6 @@ func (msc *MinerSmartContract) reduceShardersList(
 
 func (msc *MinerSmartContract) createMagicBlockForWait(
 	balances cstate.StateContextI, gn *GlobalNode) error {
-	logging.Logger.Info("[mvc] create magic block for wait")
 
 	pn, err := GetPhaseNode(balances)
 	if err != nil {
@@ -745,7 +712,6 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 	}
 	dkgMinersList, err := getDKGMinersList(balances)
 	if err != nil {
-		logging.Logger.Error("[mvc] create magic block for wait failed to get dkg miners list", zap.Error(err))
 		return err
 	}
 
@@ -753,7 +719,6 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 	switch err {
 	case nil:
 	case util.ErrValueNotPresent:
-		logging.Logger.Error("[mvc] create magic block for wait failed to get group shares or signs", zap.Error(err))
 		// gsos = block.NewGroupSharesOrSigns()
 		return common.NewErrorf("created_magic_block_failed", "see no group shares or signs")
 	default:
@@ -762,7 +727,6 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 
 	mpks, err := getMinersMPKs(balances)
 	if err != nil {
-		logging.Logger.Error("[mvc] create magic block for wait failed to get miners mpks", zap.Error(err))
 		return common.NewError("create_magic_block_failed", err.Error())
 	}
 
@@ -775,7 +739,7 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 
 	if len(noGsos) > 0 {
 		logging.Logger.Error("create magic block for wait failed, not all miners send shares or signs",
-			zap.Strings("missing miners", noGsos), zap.Error(err))
+			zap.Strings("missing miners", noGsos))
 		return common.NewErrorf("create_magic_block_failed", "see miners with no shares or signs, missing num: %d", len(noGsos))
 	}
 
@@ -794,7 +758,6 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 
 	sharders, err := getShardersKeepList(balances)
 	if err != nil {
-		logging.Logger.Error("[mvc] create magic block for wait failed to get sharders keep list", zap.Error(err))
 		return err
 	}
 	shKeepIDs := make([]string, 0, len(sharders.Nodes))
@@ -807,7 +770,6 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 	// remove sharders in the delete list from keep list
 	deleteSharders, err := getDeleteNodes(balances, spenum.Sharder)
 	if err != nil {
-		logging.Logger.Info("[mvc] create magic block for wait failed to get delete sharders list", zap.Error(err))
 		return common.NewErrorf("create_magic_block_failed", "could not get delete sharders list: %v", err)
 	}
 
@@ -834,7 +796,6 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 
 	magicBlock, err := msc.createMagicBlock(balances, keepSharders, dkgMinersList, gsos, mpks, pn, gn)
 	if err != nil {
-		logging.Logger.Info("[mvc] create magic block for wait failed to create magic block", zap.Error(err))
 		return err
 	}
 
@@ -844,7 +805,6 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 	})
 	mpks = block.NewMpks()
 	if err := updateMinersMPKs(balances, mpks); err != nil {
-		logging.Logger.Error("[mvc] create magic block for wait failed to update miners mpks", zap.Error(err))
 		return err
 	}
 
@@ -852,7 +812,6 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 
 	gsos = block.NewGroupSharesOrSigns()
 	if err := updateGroupShareOrSigns(balances, gsos); err != nil {
-		logging.Logger.Error("[mvc] create magic block for wait failed to update group shares or signs", zap.Error(err))
 		return err
 	}
 
@@ -862,13 +821,7 @@ func (msc *MinerSmartContract) createMagicBlockForWait(
 		return err
 	}
 
-	err = updateShardersKeepList(balances, NodeIDs{})
-	if err != nil {
-		logging.Logger.Error("failed to update sharders keep list", zap.Error(err))
-		return err
-	}
-
-	return nil
+	return updateShardersKeepList(balances, NodeIDs{})
 }
 
 func (msc *MinerSmartContract) contributeMpk(t *transaction.Transaction,
