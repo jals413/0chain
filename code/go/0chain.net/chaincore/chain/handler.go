@@ -843,8 +843,8 @@ func (c *Chain) printNodePool(w http.ResponseWriter, np *node.Pool) {
 	sort.SliceStable(nodes, func(i, j int) bool {
 		return nodes[i].SetIndex < nodes[j].SetIndex
 	})
-	for _, nd := range nodes {
-		logging.Logger.Info("printNodePool", zap.Any("nd", nd.Info.BuildTag))
+	for idx, nd := range nodes {
+		logging.Logger.Info("printNodePool", zap.Any("nd", nd.Info.BuildTag), zap.Any("node", np.Nodes[idx].Info), zap.Any("nodeMap", np.NodesMap[nd.ID].Info))
 		if nd.GetStatus() == node.NodeStatusInactive {
 			fmt.Fprintf(w, "<tr class='inactive'>")
 		} else {
