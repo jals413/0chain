@@ -262,6 +262,7 @@ func (b *Block) Validate(_ context.Context) error {
 	if datastore.IsEmpty(b.MinerID) {
 		return common.InvalidRequest("miner id is required")
 	}
+	logging.Logger.Info("Validating block", zap.String("hash", b.Hash), zap.String("miner_id", b.MinerID))
 	miner := node.GetNode(b.MinerID)
 	if miner == nil {
 		return common.NewError("unknown_miner", "Do not know this miner")
