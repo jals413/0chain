@@ -748,7 +748,8 @@ func (b *Block) SetPrevBlockVerificationTickets(bvt []*VerificationTicket) {
 }
 
 // Clone returns a clone of the block instance
-func (b *Block) Clone() *Block {
+func (b *Block) Clone(debug ...string) *Block {
+	logging.Logger.Info("Jayash cloneBlock", zap.Any("debug", debug))
 	clone := &Block{
 		UnverifiedBlockBody: *b.UnverifiedBlockBody.Clone(),
 		VerificationTickets: copyVerificationTickets(b.VerificationTickets),

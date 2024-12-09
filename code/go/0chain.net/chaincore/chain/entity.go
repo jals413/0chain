@@ -1661,7 +1661,7 @@ func (c *Chain) GetBlockClone(ctx context.Context, hash string) (*block.Block, e
 		return nil, err
 	}
 
-	return b.Clone(), nil
+	return b.Clone("func (c *Chain) GetBlockClone"), nil
 }
 
 func (c *Chain) getBlock(_ context.Context, hash string) (*block.Block, error) {

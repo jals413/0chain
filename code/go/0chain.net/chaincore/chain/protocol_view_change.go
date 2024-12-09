@@ -284,7 +284,7 @@ func (c *Chain) estimateTxnFee(txn *httpclientutil.Transaction) (currency.Coin, 
 		return 0, err
 	}
 
-	lfb = lfb.Clone()
+	lfb = lfb.Clone("func (c *Chain) estimateTxnFee")
 
 	_, fee, err := c.EstimateTransactionCostFee(common.GetRootContext(), lfb, tTxn)
 	if err != nil {
