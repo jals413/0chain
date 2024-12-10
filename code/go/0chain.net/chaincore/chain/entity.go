@@ -2003,6 +2003,7 @@ func (c *Chain) setCurrentRound(r int64) {
 }
 
 func (c *Chain) getCurrentRound() int64 {
+	logging.Logger.Info("get_current_round", zap.Int64("current_round", c.currentRound))
 	return c.currentRound
 }
 
