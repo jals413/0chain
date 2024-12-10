@@ -2,6 +2,8 @@ package round
 
 import (
 	"errors"
+	"github.com/0chain/common/core/logging"
+	"go.uber.org/zap"
 	"sync"
 )
 
@@ -45,12 +47,16 @@ func (s *roundStartingStorage) Get(round int64) RoundStorageEntity {
 	defer s.mu.RUnlock()
 	found := s.calcNearestRound(round)
 	if found == -1 {
+		logging.Logger.Info("roundStartingStorage", zap.Any("round", round), zap.Any("entity", nil))
 		return nil
 	}
 	entity, ok := s.items[found]
 	if !ok {
+		logging.Logger.Info("roundStartingStorage", zap.Any("round", round), zap.Any("entity", nil))
 		return nil
 	}
+
+	logging.Logger.Info("roundStartingStorage", zap.Any("round", round), zap.Any("entity", entity))
 	return entity
 }
 
@@ -87,15 +93,20 @@ func (s *roundStartingStorage) calcNearestRound(round int64) int64 {
 }
 
 func (s *roundStartingStorage) GetLatest() RoundStorageEntity {
+
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if len(s.items) == 0 {
+		logging.Logger.Info("roundStartingStorage", zap.Any("round", s.max), zap.Any("entity", nil))
 		return nil
 	}
+
+	logging.Logger.Info("roundStartingStorage", zap.Any("round", s.max), zap.Any("entity", s.items[s.max]))
 	return s.items[s.max]
 }
 
 func (s *roundStartingStorage) Put(entity RoundStorageEntity, round int64) error {
+	logging.Logger.Info("roundStartingStorage", zap.Any("round", round), zap.Any("entity", entity))
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if round > s.max {
@@ -112,6 +123,7 @@ func (s *roundStartingStorage) Put(entity RoundStorageEntity, round int64) error
 }
 
 func (s *roundStartingStorage) putToSlice(round int64) {
+	logging.Logger.Info("roundStartingStorage", zap.Any("round", round))
 	index := -1
 	for i := len(s.rounds) - 1; i >= 0; i-- {
 		sRound := s.rounds[i]
@@ -134,6 +146,7 @@ func (s *roundStartingStorage) check(round int64) error { //nolint
 func (s *roundStartingStorage) Count() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	logging.Logger.Info("roundStartingStorage", zap.Any("count", len(s.items)))
 	return len(s.items)
 }
 
@@ -142,6 +155,8 @@ func (s *roundStartingStorage) GetRounds() []int64 {
 	defer s.mu.RUnlock()
 	result := make([]int64, len(s.rounds))
 	copy(result, s.rounds)
+
+	logging.Logger.Info("roundStartingStorage", zap.Any("rounds", result))
 	return result
 }
 
@@ -152,6 +167,7 @@ func (s *roundStartingStorage) GetRound(i int) int64 {
 }
 
 func (s *roundStartingStorage) Prune(round int64) error {
+	logging.Logger.Info("roundStartingStorage", zap.Any("round", round))
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, found := s.items[round]
