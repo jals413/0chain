@@ -780,11 +780,11 @@ func (r *Round) Clone() RoundI {
 	copy(mp, r.minerPerm)
 
 	for i, b := range r.proposedBlocks {
-		pblocks[i] = b.Clone("func (r *Round) Clone() RoundI")
+		pblocks[i] = b.Clone()
 	}
 
 	for i, b := range r.notarizedBlocks {
-		nblocks[i] = b.Clone("func (r *Round) Clone() RoundI")
+		nblocks[i] = b.Clone()
 	}
 
 	for k, s := range r.shares {
@@ -794,7 +794,7 @@ func (r *Round) Clone() RoundI {
 	return &Round{
 		Number:           r.Number,
 		RandomSeed:       r.RandomSeed,
-		Block:            r.Block.Clone("func (r *Round) Clone() RoundI {"),
+		Block:            r.Block.Clone(),
 		BlockHash:        r.BlockHash,
 		VRFOutput:        r.VRFOutput,
 		minerPerm:        mp,

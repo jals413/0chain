@@ -518,7 +518,7 @@ func (c *Chain) StartLFMBWorker(ctx context.Context) {
 func (c *Chain) updateLatestFinalizedMagicBlock(ctx context.Context, lfmb *block.Block) {
 	v := &updateLFMBWithReply{
 		block: lfmb,
-		clone: lfmb.Clone("func (c *Chain) updateLatestFinalizedMagicBlock"),
+		clone: lfmb.Clone(),
 		reply: make(chan struct{}, 1),
 	}
 	select {

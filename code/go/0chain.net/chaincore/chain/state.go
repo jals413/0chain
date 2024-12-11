@@ -285,7 +285,7 @@ func (c *Chain) EstimateTransactionFeeLFB(ctx context.Context,
 	if lfb == nil {
 		return 0, errors.New("LFB not ready yet")
 	}
-	lfb = lfb.Clone("func (c *Chain) EstimateTransactionFeeLFB")
+	lfb = lfb.Clone()
 
 	_, fee, err := c.EstimateTransactionCostFee(ctx, lfb, txn, opts...)
 	return fee, err

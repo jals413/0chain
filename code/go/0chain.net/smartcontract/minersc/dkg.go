@@ -1098,8 +1098,6 @@ func (msc *MinerSmartContract) createMagicBlock(
 		n.Info.BuildTag = v.BuildTag
 		n.Status = node.NodeStatusActive
 		n.InPrevMB = pmb.Miners.HasNode(v.ID)
-		logging.Logger.Info("Jayash create magic block, add miner",
-			zap.Any("miner", n))
 		if err := magicBlock.Miners.AddNode(n, "Miners : func (msc *MinerSmartContract) createMagicBlock("); err != nil {
 			return nil, err
 		}
@@ -1124,8 +1122,6 @@ func (msc *MinerSmartContract) createMagicBlock(
 		n.Info.BuildTag = v.BuildTag
 		n.Status = node.NodeStatusActive
 		n.InPrevMB = pmb.Sharders.HasNode(v.ID)
-		logging.Logger.Info("Jayash create magic block, add sharder",
-			zap.Any("sharder", n))
 		if err := magicBlock.Sharders.AddNode(n, "Miners : func (msc *MinerSmartContract) createMagicBlock("); err != nil {
 			return nil, err
 		}

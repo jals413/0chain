@@ -48,7 +48,7 @@ func (sc *Chain) UpdateFinalizedBlock(ctx context.Context, b *block.Block) error
 		fr = round.NewRound(b.Round)
 	}
 
-	b = b.Clone("func (sc *Chain) UpdateFinalizedBloc")
+	b = b.Clone()
 	fr.Finalize(b)
 	wg := waitgroup.New(5)
 	Logger.Info("update finalized block",

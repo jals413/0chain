@@ -1428,7 +1428,7 @@ func PutTransaction(ctx context.Context, entity datastore.Entity) (interface{}, 
 	if lfb == nil {
 		return nil, errors.New("nil latest finalized block")
 	}
-	lfb = lfb.Clone("func PutTransaction(")
+	lfb = lfb.Clone()
 
 	s, err := GetStateById(lfb.ClientState, txn.ClientID)
 	if cstate.ErrInvalidState(err) {
@@ -2109,7 +2109,7 @@ func SuggestedFeeHandler(ctx context.Context, r *http.Request) (interface{}, err
 		return nil, errors.New("LFB not ready yet")
 	}
 
-	lfb = lfb.Clone("func SuggestedFeeHandler")
+	lfb = lfb.Clone()
 
 	_, fee, err := c.EstimateTransactionCostFee(ctx, lfb, &tx)
 	if err != nil {
@@ -2138,7 +2138,7 @@ func FeesTableHandler(ctx context.Context, r *http.Request) (interface{}, error)
 		return nil, errors.New("LFB not ready yet")
 	}
 
-	lfb = lfb.Clone("func FeesTableHandler")
+	lfb = lfb.Clone()
 
 	table := c.GetTransactionCostFeeTable(ctx, lfb)
 
