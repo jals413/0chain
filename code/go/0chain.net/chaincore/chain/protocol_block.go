@@ -119,9 +119,9 @@ func (c *Chain) VerifyNotarization(ctx context.Context, hash datastore.Key,
 			"Verification tickets not sufficient to reach notarization")
 	}
 
-	if err := c.VerifyTickets(ctx, hash, bvt, round); err != nil {
-		return err
-	}
+	//if err := c.VerifyTickets(ctx, hash, bvt, round); err != nil {
+	//	return err
+	//}
 
 	logging.Logger.Info("reached notarization - verify notarization",
 		zap.Int64("round", round),
