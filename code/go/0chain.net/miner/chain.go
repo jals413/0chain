@@ -327,9 +327,21 @@ func (mc *Chain) loadLatestFinalizedMagicBlockFromStore(ctx context.Context) {
 	for i := startNum; i <= lfmb.MagicBlockNumber; i++ {
 		// load MB from local store
 		mbStr := strconv.FormatInt(i, 10)
+		prevMbStr := strconv.FormatInt(i-1, 10)
 		mb, err := LoadMagicBlock(ctx, mbStr)
 		if err != nil {
 			logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+		}
+
+		prevMb, err := LoadMagicBlock(ctx, prevMbStr)
+		if err != nil {
+			logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+		}
+
+		// load and set prev mb if not in chain.MagicBlockStorage so that
+		// blocks fetch process can verify tickets
+		if mc.MagicBlockStorage.Get(prevMb.StartingRound) == nil {
+			mc.MagicBlockStorage.Put(prevMb, prevMb.StartingRound)
 		}
 
 		logging.Logger.Info("[mvc] load MB by magic bock number", zap.Int64("mb number", i))
