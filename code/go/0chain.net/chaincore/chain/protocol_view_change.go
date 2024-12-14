@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"reflect"
 	"sort"
@@ -683,4 +684,30 @@ func (c *Chain) GetPhaseOfBlock(b *block.Block) (*minersc.PhaseNode, error) {
 	}
 
 	return &pn, nil
+}
+
+func (c *Chain) GetRegisterNodesList(b *block.Block) (minersc.NodeIDs, error) {
+	var mids minersc.NodeIDs
+	minerKey, ok := minersc.GetRegisterNodeKey(spenum.Miner)
+	if !ok {
+		return nil, fmt.Errorf("invalid node type: %s", spenum.Miner)
+	}
+
+	err := c.GetBlockStateNode(b, minerKey, &mids)
+	if err != nil && err != util.ErrValueNotPresent {
+		return nil, err
+	}
+
+	sharderKey, ok := minersc.GetRegisterNodeKey(spenum.Sharder)
+	if !ok {
+		return nil, fmt.Errorf("invalid node type: %s", spenum.Sharder)
+	}
+
+	var sids minersc.NodeIDs
+	err = c.GetBlockStateNode(b, sharderKey, &sids)
+	if err != nil && err != util.ErrValueNotPresent {
+		return nil, err
+	}
+
+	return append(mids, sids...), nil
 }

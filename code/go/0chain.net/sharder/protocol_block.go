@@ -50,7 +50,7 @@ func (sc *Chain) UpdateFinalizedBlock(ctx context.Context, b *block.Block) error
 
 	b = b.Clone()
 	fr.Finalize(b)
-	wg := waitgroup.New(5)
+	wg := waitgroup.New(6)
 	Logger.Info("update finalized block",
 		zap.Int64("round", b.Round),
 		zap.String("block", b.Hash),
@@ -154,6 +154,14 @@ func (sc *Chain) UpdateFinalizedBlock(ctx context.Context, b *block.Block) error
 		Logger.Debug("update finalized blocks storage success",
 			zap.Int64("round", b.Round), zap.String("block", b.Hash))
 		return nil
+	}
+
+	nodeLists, err := sc.GetRegisterNodesList(b)
+	if err != nil {
+		Logger.Debug("update finalized block - get node lists failed", zap.Error(err))
+	} else {
+		// update the register node list cache
+		node.UpdateVCAddNodesCache(nodeLists)
 	}
 
 	pn, err := sc.GetPhaseOfBlock(b)

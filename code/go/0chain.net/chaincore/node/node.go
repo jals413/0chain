@@ -22,6 +22,7 @@ import (
 
 var nodes = make(map[string]*Node)
 var nodesMutex = &sync.RWMutex{}
+var vcAddNodesList = NewVCAddNodesList()
 
 /*RegisterNode - register a node to a global registry
 * We need to keep track of a global register of nodes. This is required to ensure we can verify a signed request
@@ -44,6 +45,10 @@ func CopyNodes() (cp map[string]*Node) {
 	}
 
 	return
+}
+
+func UpdateVCAddNodesCache(nodes []string) {
+	vcAddNodesList.ReplaceAll(nodes)
 }
 
 func GetMinerNodesKeys() []string {

@@ -58,6 +58,11 @@ func getRegisterNodes(balances cstate.StateContextI, nodeType spenum.Provider) (
 	return deleteMinersIDs, nil
 }
 
+func GetRegisterNodeKey(nodeType spenum.Provider) (datastore.Key, bool) {
+	k, ok := registerNodeKeyMap[nodeType]
+	return k, ok
+}
+
 func updateRegisterNodes(balances cstate.StateContextI, nodeType spenum.Provider, ids NodeIDs) error {
 	rKey, ok := registerNodeKeyMap[nodeType]
 	if !ok {

@@ -394,30 +394,38 @@ func validateRequest(sender *Node, r *http.Request) bool {
 * into something suitable for Node 2 Node communication*/
 func ToN2NSendEntityHandler(handler common.JSONResponderF) common.ReqRespHandlerf {
 	return func(w http.ResponseWriter, r *http.Request) {
+		nodeID := r.Header.Get(HeaderNodeID)
+		sender := GetNode(nodeID)
+		if sender == nil && !vcAddNodesList.Contains(nodeID) {
+			logging.N2n.Error("message received - request from unrecognized node", zap.String("from", nodeID),
+				zap.String("to", Self.Underlying().GetPseudoName()), zap.String("handler", r.RequestURI))
+			return
+		}
 
-		//nodeID := r.Header.Get(HeaderNodeID)
-		//sender := GetNode(nodeID)
-		//if sender == nil {
-		//	logging.N2n.Error("message received - request from unrecognized node", zap.String("from", nodeID),
-		//		zap.String("to", Self.Underlying().GetPseudoName()), zap.String("handler", r.RequestURI))
-		//	return
-		//}
-		//if !validateRequest(sender, r) {
-		//	return
-		//}
-		//sender.AddReceived(1)
+		if sender != nil {
+			if !validateRequest(sender, r) {
+				return
+			}
+			sender.AddReceived(1)
+		}
+
+		fromName := nodeID
+		if sender != nil {
+			fromName = sender.GetPseudoName()
+		}
+
 		ctx := context.TODO()
-		//ts := time.Now()
+		ts := time.Now()
 		data, err := handler(ctx, r)
 		if err != nil {
 			common.Respond(w, r, nil, err)
-			//logging.N2n.Error("message received", zap.String("from", sender.GetPseudoName()),
-			//	zap.String("to", Self.Underlying().GetPseudoName()), zap.String("handler", r.RequestURI), zap.Error(err))
+			logging.N2n.Error("message received", zap.String("from", fromName),
+				zap.String("to", Self.Underlying().GetPseudoName()), zap.String("handler", r.RequestURI), zap.Error(err))
 			return
 		}
 		options := &SendOptions{Compress: true}
 		var buffer *bytes.Buffer
-		//uri := r.URL.Path
+		uri := r.URL.Path
 		switch v := data.(type) {
 		case datastore.Entity:
 			entity := v
@@ -443,7 +451,7 @@ func ToN2NSendEntityHandler(handler common.JSONResponderF) common.ReqRespHandler
 			}
 			w.Header().Set(HeaderRequestEntityName, v.EntityName)
 			buffer = bytes.NewBuffer(v.Data)
-			//uri = r.FormValue("_puri")
+			uri = r.FormValue("_puri")
 		}
 		if options.Compress {
 			w.Header().Set("Content-Encoding", compDecomp.Encoding())
@@ -461,13 +469,15 @@ func ToN2NSendEntityHandler(handler common.JSONResponderF) common.ReqRespHandler
 			if flusher, ok := w.(http.Flusher); ok {
 				flusher.Flush()
 			}
-			//updatePullStats(sender, uri, len(sData), ts)
+			if sender != nil {
+				updatePullStats(sender, uri, len(sData), ts)
+			}
 		}
-		//logging.N2n.Info("message received", zap.String("from", sender.GetPseudoName()),
-		//	zap.String("to", Self.Underlying().GetPseudoName()),
-		//	zap.String("handler", r.RequestURI),
-		//	zap.Duration("duration", time.Since(ts)),
-		//	zap.Int("codec", options.CODEC))
+		logging.N2n.Info("message received", zap.String("from", fromName),
+			zap.String("to", Self.Underlying().GetPseudoName()),
+			zap.String("handler", r.RequestURI),
+			zap.Duration("duration", time.Since(ts)),
+			zap.Int("codec", options.CODEC))
 	}
 }
 
