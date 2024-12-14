@@ -674,6 +674,7 @@ func (n *Node) Clone() *Node {
 		LargeMessagePullServeTime: n.LargeMessagePullServeTime,
 		SmallMessagePullServeTime: n.SmallMessagePullServeTime,
 		CommChannel:               make(chan struct{}, 15),
+		Info:                      n.Info,
 	}
 
 	clone.Client.Copy(&n.Client)
