@@ -50,12 +50,12 @@ func getRegisterNodes(balances cstate.StateContextI, nodeType spenum.Provider) (
 		return nil, fmt.Errorf("invalid node type: %s", nodeType)
 	}
 
-	deleteMinersIDs, err := getNodeIDs(balances, rKey)
+	registerNodeIDs, err := getNodeIDs(balances, rKey)
 	if err != nil {
 		return nil, err
 	}
 
-	return deleteMinersIDs, nil
+	return registerNodeIDs, nil
 }
 
 func GetRegisterNodeKey(nodeType spenum.Provider) (datastore.Key, bool) {
@@ -177,9 +177,8 @@ func (msc *MinerSmartContract) AddMiner(t *transaction.Transaction,
 	defer lockAllMiners.Unlock()
 
 	newMiner.Settings.MinStake = gn.MustBase().MinStakePerDelegate
-
+	magicBlockMiners := balances.GetChainCurrentMagicBlock().Miners
 	if err := cstate.WithActivation(balances, "hermes", func() error {
-		magicBlockMiners := balances.GetChainCurrentMagicBlock().Miners
 		if magicBlockMiners == nil {
 			return common.NewError("add_miner", "magic block miners nil")
 		}
@@ -190,7 +189,23 @@ func (msc *MinerSmartContract) AddMiner(t *transaction.Transaction,
 		}
 		return nil
 	}, func() error {
-		return nil
+		if magicBlockMiners.HasNode(newMiner.ID) {
+			return nil
+		}
+
+		// check if the miner is in the register node list
+		regIDs, err := getRegisterNodes(balances, spenum.Miner)
+		if err != nil {
+			return common.NewErrorf("add_miner", "failed to get register node list: %v", err)
+		}
+		for _, regID := range regIDs {
+			if regID == newMiner.ID {
+				// in the register node list, so allow to add the miner
+				return nil
+			}
+		}
+
+		return common.NewErrorf("add_miner", "failed to add new miner: Not in magic block")
 	}); err != nil {
 		return "", err
 	}
