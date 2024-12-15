@@ -333,9 +333,15 @@ func (mc *Chain) loadLatestFinalizedMagicBlockFromStore(ctx context.Context) {
 			logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
 		}
 
-		prevMb, err := LoadMagicBlock(ctx, prevMbStr)
-		if err != nil {
-			logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+		var prevMb *block.MagicBlock
+		if i == 2 {
+			// previous magic block is the genesis block
+			prevMb = mc.GetMagicBlock(1)
+		} else {
+			prevMb, err = LoadMagicBlock(ctx, prevMbStr)
+			if err != nil {
+				logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+			}
 		}
 
 		// load and set prev mb if not in chain.MagicBlockStorage so that
