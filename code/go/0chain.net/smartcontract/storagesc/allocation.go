@@ -714,7 +714,7 @@ func (uar *updateAllocationRequest) validate(
 				return fmt.Errorf("invalid UpdateTicket: OperationType %s is not recognized", updateTicket.OperationType)
 			}
 
-			payload := fmt.Sprintf("%s:%f:%s:%s", updateTicket.AllocationID, updateTicket.RoundExpiry, updateTicket.UserID, updateTicket.OperationType)
+			payload := fmt.Sprintf("%s:%d:%s:%s", updateTicket.AllocationID, updateTicket.RoundExpiry, updateTicket.UserID, updateTicket.OperationType)
 			logging.Logger.Debug("free_storage_marker verify", zap.String("payload", payload))
 			signatureScheme := balances.GetSignatureScheme()
 			if err := signatureScheme.SetPublicKey(alloc.OwnerPublicKey); err != nil {
