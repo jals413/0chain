@@ -870,6 +870,10 @@ func StakePoolUnlock(t *transaction.Transaction, input []byte, balances cstate.S
 		spr.ClientID = t.ClientID
 		return nil
 	}, func() error {
+		if spr.ClientID == "" {
+			spr.ClientID = t.ClientID
+		}
+
 		if t.ClientID != spr.ClientID && t.ClientID != spr.ProviderID {
 			return common.NewErrorf("stake_pool_unlock_failed",
 				"only provider or delegate can unlock : %v", err)
