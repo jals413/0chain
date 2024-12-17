@@ -2439,16 +2439,22 @@ func (c *Chain) UpdateNodesFromMagicBlock(newMagicBlock *block.MagicBlock) error
 }
 
 func (c *Chain) SetupNodes(mb *block.MagicBlock) error {
-	for _, mn := range mb.Miners.CopyNodesMap() {
+	mns := mb.Miners.CopyNodes()
+	for _, mn := range mns {
 		if err := node.Setup(mn); err != nil {
 			return err
 		}
 	}
-	for _, sh := range mb.Sharders.CopyNodesMap() {
+
+	shs := mb.Sharders.CopyNodes()
+
+	for _, sh := range shs {
 		if err := node.Setup(sh); err != nil {
 			return err
 		}
 	}
+
+	node.RegisterNodes(append(mns, shs...))
 
 	return nil
 }

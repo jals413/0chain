@@ -34,6 +34,16 @@ func RegisterNode(node *Node) {
 	nodes[node.GetKey()] = node
 }
 
+// RegisterNodes replaces the existing nodes with the new nodes.
+func RegisterNodes(mbNodes []*Node) {
+	nodesMutex.Lock()
+	defer nodesMutex.Unlock()
+	nodes = make(map[string]*Node, len(nodes))
+	for _, n := range mbNodes {
+		nodes[n.GetKey()] = n
+	}
+}
+
 // CopyNodes returns copy of all registered nodes.
 func CopyNodes() (cp map[string]*Node) {
 	nodesMutex.RLock()
