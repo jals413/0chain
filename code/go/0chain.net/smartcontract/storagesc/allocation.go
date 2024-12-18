@@ -612,7 +612,7 @@ type updateAllocationRequest struct {
 	FileOptionsChanged      bool   `json:"file_options_changed"`
 	FileOptions             uint16 `json:"file_options"`
 
-	UpdateTicket *Ticket `json:"update_ticket"`
+	UpdateTicket *Ticket `json:"update_ticket" binding:"-"`
 
 	OwnerSigningPublicKey string `json:"owner_signing_public_key"`
 }
