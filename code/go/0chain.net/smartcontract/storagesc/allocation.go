@@ -1183,7 +1183,7 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 		isThirdPartyUnAuthorizedRequest = t.ClientID != alloc.Owner
 		return nil
 	}, func() error {
-		isThirdPartyUnAuthorizedRequest = t.ClientID == alloc.Owner || request.UpdateTicket != nil
+		isThirdPartyUnAuthorizedRequest = t.ClientID != alloc.Owner && request.UpdateTicket == nil
 		return nil
 	})
 	if actErr != nil {
