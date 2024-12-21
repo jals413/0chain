@@ -715,13 +715,13 @@ func (uar *updateAllocationRequest) validate(
 			}
 
 			payload := fmt.Sprintf("%s:%d:%s:%s", updateTicket.AllocationID, updateTicket.RoundExpiry, updateTicket.UserID, updateTicket.OperationType)
-			logging.Logger.Debug("free_storage_marker verify", zap.String("payload", payload))
+			logging.Logger.Debug("update_alloc_ticket verify", zap.String("payload", payload))
 			signatureScheme := balances.GetSignatureScheme()
 			if err := signatureScheme.SetPublicKey(alloc.OwnerPublicKey); err != nil {
 				return fmt.Errorf("failed to set public key: %v", err)
 			}
-			_, err := signatureScheme.Verify(updateTicket.Signature, hex.EncodeToString([]byte(payload)))
-			if err != nil {
+			success, err := signatureScheme.Verify(updateTicket.Signature, hex.EncodeToString([]byte(payload)))
+			if err != nil || !success {
 				return fmt.Errorf("UpdateTicket Signature verification failed: %v", err)
 			}
 		}
