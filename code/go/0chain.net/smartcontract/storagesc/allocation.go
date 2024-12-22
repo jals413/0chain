@@ -687,7 +687,7 @@ func (uar *updateAllocationRequest) validate(
 			validOperation := func(op string, conditions ...bool) error {
 				for _, condition := range conditions {
 					if !condition {
-						return fmt.Errorf("Invalid UpdateTicket: OperationType %s has conflicting or missing parameters", op)
+						return fmt.Errorf("invalid UpdateTicket: OperationType %s has conflicting or missing parameters", op)
 					}
 				}
 				return nil
@@ -695,7 +695,7 @@ func (uar *updateAllocationRequest) validate(
 
 			switch updateTicket.OperationType {
 			case "add_blobber":
-				if err := validOperation("add_blobber", uar.AddBlobberId != "", uar.RemoveBlobberId == "", uar.Size <= 0, !uar.Extend); err != nil {
+				if err := validOperation("add_blobber", uar.AddBlobberId != "", uar.RemoveBlobberId == "", uar.Size <= 0); err != nil {
 					return err
 				}
 			case "replace_blobber":
@@ -703,7 +703,7 @@ func (uar *updateAllocationRequest) validate(
 					return err
 				}
 			case "size_upgrade":
-				if err := validOperation("size_upgrade", uar.Size > 0, uar.AddBlobberId == "", uar.RemoveBlobberId == "", !uar.Extend); err != nil {
+				if err := validOperation("size_upgrade", uar.Size > 0, uar.AddBlobberId == "", uar.RemoveBlobberId == ""); err != nil {
 					return err
 				}
 			case "extend":
