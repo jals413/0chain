@@ -1019,7 +1019,7 @@ func (c *Chain) SetMagicBlock(mb *block.MagicBlock) {
 		logging.Logger.Error("failed to put magic block", zap.Error(err))
 	}
 
-	logging.Logger.Debug("[mvc] set magic block",
+	logging.Logger.Error("[mvc] set magic block",
 		zap.Int64("mb number", mb.MagicBlockNumber),
 		zap.Int64("mb sr", mb.StartingRound),
 		zap.String("mb hash", mb.Hash))
