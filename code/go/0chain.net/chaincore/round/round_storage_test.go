@@ -274,3 +274,72 @@ func Test_roundStartingStorage_putToSlice(t *testing.T) {
 		require.Equal(t, []int64{150, 100, 75, 50, 25}, s.rounds)
 	})
 }
+
+func Test_roundStartingStorage_calcNearestRound(t *testing.T) {
+	t.Run("empty rounds", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{},
+			max:    0,
+		}
+		got := s.calcNearestRound(10)
+		require.Equal(t, int64(-1), got)
+	})
+
+	t.Run("round greater than max", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{100, 90, 80},
+			max:    100,
+		}
+		got := s.calcNearestRound(150)
+		require.Equal(t, int64(100), got)
+	})
+
+	t.Run("exact round match", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{100, 90, 80},
+			max:    100,
+		}
+		got := s.calcNearestRound(90)
+		require.Equal(t, int64(90), got)
+	})
+
+	t.Run("round between values", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{100, 90, 80},
+			max:    100,
+		}
+		got := s.calcNearestRound(85)
+		require.Equal(t, int64(80), got, "should return 80 as it's the nearest lower round")
+	})
+
+	t.Run("round lower than all values", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{100, 90, 80},
+			max:    100,
+		}
+		got := s.calcNearestRound(70)
+		require.Equal(t, int64(-1), got, "should return -1 as there's no lower round")
+	})
+
+	t.Run("with descending order", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{100, 90, 80, 70},
+			max:    100,
+		}
+		testCases := []struct {
+			input    int64
+			expected int64
+		}{
+			{95, 90},
+			{90, 90},
+			{89, 80},
+			{75, 70},
+			{70, 70},
+			{60, -1},
+		}
+		for _, tc := range testCases {
+			got := s.calcNearestRound(tc.input)
+			require.Equal(t, tc.expected, got, "failed for input %d", tc.input)
+		}
+	})
+}

@@ -83,7 +83,6 @@ func (s *roundStartingStorage) calcNearestRound(round int64) int64 {
 	for i := 0; i < len(s.rounds); i++ {
 		if round >= s.rounds[i] {
 			found = s.rounds[i]
-		} else {
 			break
 		}
 	}
