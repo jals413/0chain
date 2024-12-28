@@ -1618,14 +1618,13 @@ func StartProtocol(ctx context.Context, gb *block.Block) {
 		mr *Round
 	)
 
+	mc.loadLatestFinalizedMagicBlockFromStore(ctx)
+	mc.BumpLFBTicket(ctx)
+
 	if err := mc.LoadLatestBlocksFromStore(ctx); err != nil {
 		logging.Logger.Error(fmt.Sprintf("can't load latest blocks from store, err: %v", err))
 		// return
 	}
-
-	mc.loadLatestFinalizedMagicBlockFromStore(ctx)
-
-	mc.BumpLFBTicket(ctx)
 
 	lfb := mc.GetLatestFinalizedBlock()
 	if lfb != nil {
