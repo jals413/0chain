@@ -99,6 +99,8 @@ type newAllocationRequest struct {
 	IsEnterprise           bool   `json:"is_enterprise"`
 	StorageVersion         int    `json:"storage_version"`
 	OwnerSigningPublickKey string `json:"owner_signing_public_key"`
+
+	AuthRoundExpiry int64 `json:"auth_round_expiry"`
 }
 
 // storageAllocation from the request
@@ -604,6 +606,8 @@ type updateAllocationRequest struct {
 	FileOptions             uint16 `json:"file_options"`
 
 	OwnerSigningPublicKey string `json:"owner_signing_public_key"`
+
+	AuthRoundExpiry int64 `json:"auth_round_expiry"`
 }
 
 func (uar *updateAllocationRequest) decode(b []byte) error {
@@ -1182,7 +1186,7 @@ func (sc *StorageSmartContract) updateAllocationRequestInternal(
 
 		if len(request.AddBlobberId) > 0 {
 			blobbers, err = alloc.changeBlobbers(
-				conf, blobbers, request.AddBlobberId, request.AddBlobberAuthTicket, request.RemoveBlobberId, t.CreationDate, balances, sc, t, isEnterprise, storageVersion,
+				conf, blobbers, request.AddBlobberId, request.AddBlobberAuthTicket, request.RemoveBlobberId, t.CreationDate, balances, sc, t, isEnterprise, storageVersion, request.AuthRoundExpiry,
 			)
 			if err != nil {
 				return "", common.NewError("allocation_updating_failed", err.Error())
