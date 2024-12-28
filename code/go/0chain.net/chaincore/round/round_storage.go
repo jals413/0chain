@@ -77,7 +77,7 @@ func (s *roundStartingStorage) FindRoundIndex(round int64) int {
 		return len(s.rounds) - 1
 	}
 	found := -1
-	for i := 0; i < len(s.rounds); i++ {
+	for i := len(s.rounds) - 1; i >= 0; i-- {
 		if round >= s.rounds[i] {
 			found = i
 			break
@@ -91,7 +91,7 @@ func (s *roundStartingStorage) calcNearestRound(round int64) int64 {
 		return s.max
 	}
 	found := int64(-1)
-	for i := 0; i < len(s.rounds); i++ {
+	for i := len(s.rounds) - 1; i >= 0; i-- {
 		if round >= s.rounds[i] {
 			found = s.rounds[i]
 			break
@@ -101,7 +101,6 @@ func (s *roundStartingStorage) calcNearestRound(round int64) int64 {
 }
 
 func (s *roundStartingStorage) GetLatest() RoundStorageEntity {
-
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if len(s.items) == 0 {
@@ -132,7 +131,7 @@ func (s *roundStartingStorage) Put(entity RoundStorageEntity, round int64) error
 func (s *roundStartingStorage) putToSlice(round int64) {
 	index := -1
 	for i := 0; i < len(s.rounds); i++ {
-		if s.rounds[i] <= round {
+		if s.rounds[i] >= round {
 			index = i
 			break
 		}
@@ -177,7 +176,7 @@ func (s *roundStartingStorage) Prune(round int64) error {
 		return ErrRoundEntityNotFound
 	}
 	pruneIndex := -1
-	for i := len(s.rounds) - 1; i >= 0; i-- {
+	for i := 0; i < len(s.rounds); i++ {
 		if round == s.rounds[i] {
 			pruneIndex = i
 			break
@@ -187,10 +186,10 @@ func (s *roundStartingStorage) Prune(round int64) error {
 		return ErrRoundEntityNotFound
 	}
 
-	// Remove all items from pruneIndex to end (lower or equal rounds in descending order)
-	for i := pruneIndex; i < len(s.rounds); i++ {
+	// Remove all items up to and including pruneIndex (lower or equal rounds in ascending order)
+	for i := 0; i <= pruneIndex; i++ {
 		delete(s.items, s.rounds[i])
 	}
-	s.rounds = s.rounds[:pruneIndex]
+	s.rounds = s.rounds[pruneIndex+1:]
 	return nil
 }
