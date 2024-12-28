@@ -68,7 +68,6 @@ func (s *roundStartingStorage) FindRoundIndex(round int64) int {
 	for i := 0; i < len(s.rounds); i++ {
 		if round >= s.rounds[i] {
 			found = i
-		} else {
 			break
 		}
 	}
@@ -166,9 +165,7 @@ func (s *roundStartingStorage) Prune(round int64) error {
 		return ErrRoundEntityNotFound
 	}
 	pruneIndex := -1
-	pruneRounds := make([]int64, 0)
-	for i := 0; i < len(s.rounds); i++ {
-		pruneRounds = append(pruneRounds, s.rounds[i])
+	for i := len(s.rounds) - 1; i >= 0; i-- {
 		if round == s.rounds[i] {
 			pruneIndex = i
 			break
@@ -178,9 +175,10 @@ func (s *roundStartingStorage) Prune(round int64) error {
 		return ErrRoundEntityNotFound
 	}
 
-	for _, roundRemove := range pruneRounds {
-		delete(s.items, roundRemove)
+	// Remove all items from pruneIndex to end (lower or equal rounds in descending order)
+	for i := pruneIndex; i < len(s.rounds); i++ {
+		delete(s.items, s.rounds[i])
 	}
-	s.rounds = s.rounds[pruneIndex+1:]
+	s.rounds = s.rounds[:pruneIndex]
 	return nil
 }
