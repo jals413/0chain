@@ -346,7 +346,7 @@ func (mc *Chain) loadLatestFinalizedMagicBlockFromStore(ctx context.Context) {
 
 		// load and set prev mb if not in chain.MagicBlockStorage so that
 		// blocks fetch process can verify tickets
-		if mc.MagicBlockStorage.Get(prevMb.StartingRound) == nil {
+		if mc.MagicBlockStorage.GetByStartingRound(prevMb.StartingRound) == nil {
 			mc.MagicBlockStorage.Put(prevMb, prevMb.StartingRound)
 		}
 

@@ -16,6 +16,7 @@ type RoundStorageEntity = interface{}
 
 type RoundStorage interface {
 	Get(round int64) RoundStorageEntity
+	GetByStartingRound(round int64) RoundStorageEntity
 	GetLatest() RoundStorageEntity
 	Put(entity RoundStorageEntity, round int64) error
 	Prune(round int64) error
@@ -51,6 +52,17 @@ func (s *roundStartingStorage) Get(round int64) RoundStorageEntity {
 		return nil
 	}
 	entity, ok := s.items[found]
+	if !ok {
+		return nil
+	}
+
+	return entity
+}
+
+func (s *roundStartingStorage) GetByStartingRound(round int64) RoundStorageEntity {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	entity, ok := s.items[round]
 	if !ok {
 		return nil
 	}
