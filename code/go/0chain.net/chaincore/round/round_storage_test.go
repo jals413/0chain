@@ -221,3 +221,56 @@ func Test_roundStartingStorage_FindRoundIndex(t *testing.T) {
 		})
 	}
 }
+
+func Test_roundStartingStorage_putToSlice(t *testing.T) {
+	t.Run("empty slice", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{},
+		}
+		s.putToSlice(100)
+		require.Equal(t, []int64{100}, s.rounds)
+	})
+
+	t.Run("insert at beginning - largest number", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{90, 80, 70},
+		}
+		s.putToSlice(100)
+		require.Equal(t, []int64{100, 90, 80, 70}, s.rounds)
+	})
+
+	t.Run("insert in middle", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{100, 80, 70},
+		}
+		s.putToSlice(90)
+		require.Equal(t, []int64{100, 90, 80, 70}, s.rounds)
+	})
+
+	t.Run("insert at end - smallest number", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{100, 90, 80},
+		}
+		s.putToSlice(70)
+		require.Equal(t, []int64{100, 90, 80, 70}, s.rounds)
+	})
+
+	t.Run("insert with duplicate values", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{100, 90, 80},
+		}
+		s.putToSlice(90)
+		require.Equal(t, []int64{100, 90, 90, 80}, s.rounds)
+	})
+
+	t.Run("multiple inserts maintain order", func(t *testing.T) {
+		s := &roundStartingStorage{
+			rounds: []int64{},
+		}
+		rounds := []int64{50, 100, 75, 25, 150}
+		for _, r := range rounds {
+			s.putToSlice(r)
+		}
+		require.Equal(t, []int64{150, 100, 75, 50, 25}, s.rounds)
+	})
+}

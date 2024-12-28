@@ -3,6 +3,9 @@ package round
 import (
 	"errors"
 	"sync"
+
+	"github.com/0chain/common/core/logging"
+	"go.uber.org/zap"
 )
 
 var (
@@ -111,22 +114,23 @@ func (s *roundStartingStorage) Put(entity RoundStorageEntity, round int64) error
 		s.putToSlice(round)
 	}
 
+	logging.Logger.Info("[mvc] put to round storage", zap.Int64("round", round), zap.Any("entity", entity))
+
 	return nil
 }
 
 func (s *roundStartingStorage) putToSlice(round int64) {
 	index := -1
-	for i := len(s.rounds) - 1; i >= 0; i-- {
-		sRound := s.rounds[i]
-		if sRound < round {
+	for i := 0; i < len(s.rounds); i++ {
+		if s.rounds[i] <= round {
 			index = i
 			break
 		}
 	}
 	if index == -1 {
-		s.rounds = append([]int64{round}, s.rounds...)
+		s.rounds = append(s.rounds, round)
 	} else {
-		s.rounds = append(s.rounds[:index+1], append([]int64{round}, s.rounds[index+1:]...)...)
+		s.rounds = append(s.rounds[:index], append([]int64{round}, s.rounds[index:]...)...)
 	}
 }
 
