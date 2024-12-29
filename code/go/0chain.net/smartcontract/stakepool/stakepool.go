@@ -866,6 +866,13 @@ func StakePoolUnlock(t *transaction.Transaction, input []byte, balances cstate.S
 			"provide get func")
 	}
 
+	get := funcs[0]
+	var sp AbstractStakePool
+	if sp, err = get(spr.ProviderType, spr.ProviderID, balances); err != nil {
+		return "", common.NewErrorf("stake_pool_unlock_failed",
+			"can't get related stake pool: %v", err)
+	}
+
 	if actErr := cstate.WithActivation(balances, "hermes", func() error {
 		spr.ClientID = t.ClientID
 		return nil
@@ -874,21 +881,15 @@ func StakePoolUnlock(t *transaction.Transaction, input []byte, balances cstate.S
 			spr.ClientID = t.ClientID
 		}
 
-		if t.ClientID != spr.ClientID && t.ClientID != spr.ProviderID {
+		if t.ClientID != spr.ClientID && t.ClientID != sp.GetSettings().DelegateWallet {
 			return common.NewErrorf("stake_pool_unlock_failed",
-				"only provider or delegate can unlock : %v", err)
+				"only provider or client can unlock : %v", err)
 		}
 		return nil
 	}); actErr != nil {
 		return "", actErr
 	}
 
-	get := funcs[0]
-	var sp AbstractStakePool
-	if sp, err = get(spr.ProviderType, spr.ProviderID, balances); err != nil {
-		return "", common.NewErrorf("stake_pool_unlock_failed",
-			"can't get related stake pool: %v", err)
-	}
 	dp, ok := sp.GetPools()[spr.ClientID]
 	if !ok {
 		return "", common.NewErrorf("stake_pool_unlock_failed", "no such delegate pool: %v ", spr.ClientID)
