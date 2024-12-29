@@ -10,7 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/0chain/common/core/logging"
 	"github.com/rcrowley/go-metrics"
+	"go.uber.org/zap"
 
 	"0chain.net/chaincore/client"
 	"0chain.net/core/common"
@@ -642,7 +644,14 @@ func (n *Node) SetNode(old *Node) {
 	if clone.ProtocolStats != nil {
 		n.ProtocolStats = clone.ProtocolStats.(interface{ Clone() interface{} }).Clone()
 	}
+
+	// Don't override build tag if it's set
+	buildTag := n.Info.BuildTag
 	n.Info = clone.Info
+	if buildTag != "" {
+		n.Info.BuildTag = buildTag
+	}
+
 	n.Status = clone.Status
 }
 
@@ -704,6 +713,7 @@ func (n *Node) Clone() *Node {
 
 	ps, ok := n.ProtocolStats.(interface{ Clone() interface{} })
 	if ok {
+		logging.Logger.Info("cloning protocol stats", zap.Any("stats", ps))
 		clone.ProtocolStats = ps.Clone()
 	}
 
