@@ -254,9 +254,7 @@ func (np *Pool) CopyNodes() (list []*Node) {
 	}
 
 	list = make([]*Node, len(np.Nodes))
-	for i, n := range np.Nodes {
-		list[i] = n.Clone()
-	}
+	copy(list, np.Nodes)
 	return
 }
 
@@ -267,7 +265,7 @@ func (np *Pool) CopyNodesMap() (nodesMap map[string]*Node) {
 
 	nodesMap = make(map[string]*Node, len(np.NodesMap))
 	for i, n := range np.NodesMap {
-		nodesMap[n.GetKey()] = np.NodesMap[i].Clone()
+		nodesMap[n.GetKey()] = np.NodesMap[i]
 	}
 
 	return
