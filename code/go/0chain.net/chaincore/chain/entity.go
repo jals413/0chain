@@ -2401,6 +2401,8 @@ func (c *Chain) UpdateMagicBlock(newMagicBlock *block.MagicBlock) error {
 		return nil
 	}
 
+	c.SetMagicBlock(newMagicBlock.Clone())
+
 	// initialize magicblock nodepools
 	if err := c.UpdateNodesFromMagicBlock(newMagicBlock); err != nil {
 		return common.NewErrorf("failed to update magic block", "%v", err)
@@ -2421,7 +2423,6 @@ func (c *Chain) UpdateMagicBlock(newMagicBlock *block.MagicBlock) error {
 		}
 	}
 
-	c.SetMagicBlock(newMagicBlock.Clone())
 	return nil
 }
 

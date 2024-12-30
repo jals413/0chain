@@ -165,18 +165,18 @@ func Provider() *Node {
 	return node
 }
 
-func Setup(node *Node) error {
+func Setup(n *Node) error {
 	// queue up at most these many messages to a node
 	// because of this, we don't want the status monitoring to use this communication layer
-	node.mutex.Lock()
-	node.setupCommChannel()
-	node.TimersByURI = make(map[string]metrics.Timer, 10)
-	node.SizeByURI = make(map[string]metrics.Histogram, 10)
-	node.mutex.Unlock()
-	if err := node.ComputeProperties(); err != nil {
+	n.mutex.Lock()
+	n.setupCommChannel()
+	n.TimersByURI = make(map[string]metrics.Timer, 10)
+	n.SizeByURI = make(map[string]metrics.Histogram, 10)
+	n.mutex.Unlock()
+	if err := n.ComputeProperties(); err != nil {
 		return err
 	}
-	Self.SetNodeIfPublicKeyIsEqual(node)
+	Self.SetNodeIfPublicKeyIsEqual(n)
 	return nil
 }
 
