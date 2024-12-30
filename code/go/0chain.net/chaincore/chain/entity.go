@@ -2421,7 +2421,7 @@ func (c *Chain) UpdateMagicBlock(newMagicBlock *block.MagicBlock) error {
 		}
 	}
 
-	c.SetMagicBlock(newMagicBlock)
+	c.SetMagicBlock(newMagicBlock.Clone())
 	return nil
 }
 
