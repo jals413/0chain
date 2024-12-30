@@ -1015,7 +1015,7 @@ func (c *Chain) GetPrevMagicBlockFromMB(mb *block.MagicBlock) (
 func (c *Chain) SetMagicBlock(mb *block.MagicBlock) {
 	c.mbMutex.Lock()
 	defer c.mbMutex.Unlock()
-	if err := c.MagicBlockStorage.Put(mb, mb.StartingRound); err != nil {
+	if err := c.MagicBlockStorage.Put(mb.Clone(), mb.StartingRound); err != nil {
 		logging.Logger.Error("failed to put magic block", zap.Error(err))
 	}
 
@@ -2402,7 +2402,7 @@ func (c *Chain) UpdateMagicBlock(newMagicBlock *block.MagicBlock) error {
 	}
 
 	c.InitializeMinerPool(newMagicBlock)
-	c.SetMagicBlock(newMagicBlock.Clone())
+	c.SetMagicBlock(newMagicBlock)
 
 	// initialize magicblock nodepools
 	if err := c.UpdateNodesFromMagicBlock(newMagicBlock); err != nil {
