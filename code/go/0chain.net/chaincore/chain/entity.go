@@ -2401,6 +2401,7 @@ func (c *Chain) UpdateMagicBlock(newMagicBlock *block.MagicBlock) error {
 		return nil
 	}
 
+	c.InitializeMinerPool(newMagicBlock)
 	c.SetMagicBlock(newMagicBlock.Clone())
 
 	// initialize magicblock nodepools
