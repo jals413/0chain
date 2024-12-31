@@ -215,6 +215,8 @@ func mergeEvents(round int64, block string, events []Event) ([]Event, error) {
 
 			mergeUpdateChallengesEvents(),
 			mergeAddChallengePoolsEvents(),
+			mergeToChallengePoolsEvents(),
+			mergeFromChallengePoolsEvents(),
 
 			mergeUpdateBlobberChallengesEvents(),
 			mergeUpdateAllocChallengesEvents(),
