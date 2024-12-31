@@ -247,6 +247,9 @@ func mergeEvents(round int64, block string, events []Event) ([]Event, error) {
 			mergeAuthorizerHealthCheckEvents(),
 			mergeValidatorHealthCheckEvents(),
 
+			mergeUpdateMinersEvents(),
+			mergeUpdateSharderEvents(),
+
 			mergeAddBurnTicket(),
 
 			mergeUpdateUserCollectedRewardsEvents(),
