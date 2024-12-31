@@ -110,3 +110,20 @@ func (edb *EventDb) addDelegatePools(dps []DelegatePool) error {
 		UpdateAll: true,
 	}).Create(&dps).Error
 }
+
+func mergeUpdateDelegatePoolEvents() *eventsMergerImpl[DelegatePool] {
+	return newEventsMerger[DelegatePool](TagUpdateDelegatePool, withDelegatePoolMerged())
+}
+
+func withDelegatePoolMerged() eventMergeMiddleware {
+	return withEventMerge(func(a, b *DelegatePool) (*DelegatePool, error) {
+		a.Balance += b.Balance
+		a.Reward += b.Reward
+		a.TotalReward += b.TotalReward
+		a.TotalPenalty += b.TotalPenalty
+		a.RoundPoolLastUpdated = b.RoundPoolLastUpdated
+		a.Status = b.Status
+		a.StakedAt = b.StakedAt
+		return a, nil
+	})
+}

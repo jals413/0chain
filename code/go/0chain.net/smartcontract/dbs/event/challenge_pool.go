@@ -44,6 +44,9 @@ func mergeFromChallengePoolsEvents() *eventsMergerImpl[ChallengePool] {
 func withMergeToChallengePool() eventMergeMiddleware {
 	return withEventMerge(func(a, b *ChallengePool) (*ChallengePool, error) {
 		a.Balance += b.Balance
+		a.StartTime = b.StartTime
+		a.Expiration = b.Expiration
+		a.Finalized = b.Finalized
 		return a, nil
 	})
 }
@@ -51,6 +54,9 @@ func withMergeToChallengePool() eventMergeMiddleware {
 func withMergeFromChallengePool() eventMergeMiddleware {
 	return withEventMerge(func(a, b *ChallengePool) (*ChallengePool, error) {
 		a.Balance -= b.Balance
+		a.StartTime = b.StartTime
+		a.Expiration = b.Expiration
+		a.Finalized = b.Finalized
 		return a, nil
 	})
 }

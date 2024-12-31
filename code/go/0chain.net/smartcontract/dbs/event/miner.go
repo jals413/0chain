@@ -318,3 +318,7 @@ func mergeUpdateMinerTotalStakesEvents() *eventsMergerImpl[Miner] {
 func mergeMinerHealthCheckEvents() *eventsMergerImpl[dbs.DbHealthCheck] {
 	return newEventsMerger[dbs.DbHealthCheck](TagMinerHealthCheck, withUniqueEventOverwrite())
 }
+
+func mergeUpdateMinersEvents() *eventsMergerImpl[Miner] {
+	return newEventsMerger[Miner](TagUpdateMiner, withUniqueEventOverwrite())
+}
