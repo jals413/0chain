@@ -1618,7 +1618,7 @@ func StartProtocol(ctx context.Context, gb *block.Block) {
 		mr *Round
 	)
 
-	mc.loadLatestFinalizedMagicBlockFromStore(ctx)
+	mc.LoadLatestFinalizedMagicBlockFromStore(ctx)
 	mc.BumpLFBTicket(ctx)
 
 	if err := mc.LoadLatestBlocksFromStore(ctx); err != nil {

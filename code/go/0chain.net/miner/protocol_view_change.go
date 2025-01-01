@@ -655,24 +655,6 @@ func LoadLatestMB(ctx context.Context, lfbRound, mbNumber int64) (mb *block.Magi
 // Setup miner (initialization).
 //
 
-func (mc *Chain) updateMagicBlocks(mbs ...*block.Block) {
-	for _, mb := range mbs {
-		if mb == nil {
-			continue
-		}
-		if err := mc.UpdateMagicBlock(mb.MagicBlock); err == nil {
-			mc.SetLatestFinalizedMagicBlock(mb)
-		} else {
-			logging.Logger.Error("update magic block failed",
-				zap.Error(err),
-				zap.Int64("mb number", mb.MagicBlockNumber),
-				zap.Int64("mb sr", mb.StartingRound),
-				zap.String("mb hash", mb.Hash),
-			)
-		}
-	}
-}
-
 // SetupLatestAndPreviousMagicBlocks used to be sure miner has latest and
 // previous MB and corresponding DKG. The previous MB can be useless in
 // some cases but this method just makes sure it is.
@@ -692,7 +674,7 @@ func (mc *Chain) SetupLatestAndPreviousMagicBlocks(ctx context.Context) {
 	}
 
 	if lfmb.MagicBlockNumber <= 1 {
-		mc.updateMagicBlocks(lfmb)
+		mc.UpdateMagicBlocks(lfmb)
 		return // no previous MB is expected
 	}
 
@@ -706,7 +688,7 @@ func (mc *Chain) SetupLatestAndPreviousMagicBlocks(ctx context.Context) {
 		if err := mc.SetDKGSFromStore(ctx, lfmb.MagicBlock); err != nil {
 			logging.Logger.Warn("set dkgs from store failed", zap.Error(err))
 		}
-		mc.updateMagicBlocks(pfmb, lfmb)
+		mc.UpdateMagicBlocks(pfmb, lfmb)
 		return
 	}
 
@@ -718,7 +700,7 @@ func (mc *Chain) SetupLatestAndPreviousMagicBlocks(ctx context.Context) {
 			logging.Logger.Warn("set dkgs from store failed", zap.Error(err))
 		}
 
-		mc.updateMagicBlocks(pfmb, lfmb)
+		mc.UpdateMagicBlocks(pfmb, lfmb)
 		return
 	}
 
@@ -746,7 +728,7 @@ func (mc *Chain) SetupLatestAndPreviousMagicBlocks(ctx context.Context) {
 	if err := mc.SetDKGSFromStore(ctx, pfmb.MagicBlock); err != nil {
 		logging.Logger.Warn("set dkgs from store", zap.Error(err))
 	}
-	mc.updateMagicBlocks(pfmb, lfmb) // ok
+	mc.UpdateMagicBlocks(pfmb, lfmb) // ok
 }
 
 func SignShareRequestHandler(ctx context.Context, r *http.Request) (

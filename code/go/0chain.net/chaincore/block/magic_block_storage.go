@@ -59,3 +59,22 @@ func NewMagicBlockData(mb *MagicBlock) *MagicBlockData {
 	mbData.MagicBlock = mb
 	return mbData
 }
+
+func LoadMagicBlock(ctx context.Context, id string) (mb *MagicBlock,
+	err error) {
+
+	var mbd = datastore.GetEntity("magicblockdata").(*MagicBlockData)
+	mbd.ID = id
+
+	var (
+		emd  = mbd.GetEntityMetadata()
+		dctx = ememorystore.WithEntityConnection(ctx, emd)
+	)
+	defer ememorystore.Close(dctx)
+
+	if err = mbd.Read(dctx, mbd.GetKey()); err != nil {
+		return
+	}
+	mb = mbd.MagicBlock
+	return
+}

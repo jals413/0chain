@@ -2741,3 +2741,88 @@ func (c *Chain) BlockTicketsVerifyWithLock(ctx context.Context, blockHash string
 		return ctx.Err()
 	}
 }
+
+func (c *Chain) LoadLatestFinalizedMagicBlockFromStore(ctx context.Context) {
+	lfmb := c.GetLatestMagicBlock()
+	// load the latest N magic blocks
+	n := int64(5) // TODO: read from config
+	retry := 3
+
+	if lfmb.MagicBlockNumber <= 1 {
+		return
+	}
+
+	// magic block number start from 1, the genesis block
+	startNum := int64(2) // 1 is the genesis block, we have it locally, so don't need to fetch from remote
+	if lfmb.MagicBlockNumber < startNum {
+		// genesis block, return
+		return
+	}
+
+	newStart := lfmb.MagicBlockNumber - n
+	if newStart > startNum {
+		startNum = newStart
+	}
+
+	for i := startNum; i <= lfmb.MagicBlockNumber; i++ {
+		// load MB from local store
+		mbStr := strconv.FormatInt(i, 10)
+		prevMbStr := strconv.FormatInt(i-1, 10)
+		mb, err := block.LoadMagicBlock(ctx, mbStr)
+		if err != nil {
+			logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+		}
+
+		var prevMb *block.MagicBlock
+		if i == 2 {
+			// previous magic block is the genesis block
+			prevMb = c.GetMagicBlock(1)
+		} else {
+			prevMb, err = block.LoadMagicBlock(ctx, prevMbStr)
+			if err != nil {
+				logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+			}
+		}
+
+		// load and set prev mb if not in chain.MagicBlockStorage so that
+		// blocks fetch process can verify tickets
+		// if mc.MagicBlockStorage.GetByStartingRound(prevMb.StartingRound) == nil {
+		c.MagicBlockStorage.Put(prevMb, prevMb.StartingRound)
+		// } else {
+		// 	logging.Logger.Error("[mvc] load prev MB by magic bock number",
+		// 		zap.Int64("mb number", i),
+
+		// }
+
+		logging.Logger.Info("[mvc] load MB by magic bock number", zap.Int64("mb number", i))
+		for j := 0; j < retry; j++ {
+			bmb, err := c.GetNotarizedBlockFromSharders(ctx, "", mb.StartingRound)
+			if err != nil {
+				logging.Logger.Error("load_lfb - could not fetch latest finalized magic block from sharders",
+					zap.Int64("mb_starting_round", lfmb.StartingRound), zap.Error(err))
+				time.Sleep(3 * time.Second)
+				continue
+			}
+			c.UpdateMagicBlocks(bmb)
+			break
+		}
+	}
+}
+
+func (c *Chain) UpdateMagicBlocks(mbs ...*block.Block) {
+	for _, mb := range mbs {
+		if mb == nil {
+			continue
+		}
+		if err := c.UpdateMagicBlock(mb.MagicBlock); err == nil {
+			c.SetLatestFinalizedMagicBlock(mb)
+		} else {
+			logging.Logger.Error("update magic block failed",
+				zap.Error(err),
+				zap.Int64("mb number", mb.MagicBlockNumber),
+				zap.Int64("mb sr", mb.StartingRound),
+				zap.String("mb hash", mb.Hash),
+			)
+		}
+	}
+}

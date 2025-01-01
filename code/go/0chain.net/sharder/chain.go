@@ -542,6 +542,10 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 
 loop:
 	for {
+		logging.Logger.Debug("load_lfb, start to load latest finalized magic block from store")
+		// and then, check out related LFMB can be missing
+		sc.LoadLatestFinalizedMagicBlockFromStore(ctx)
+
 		logging.Logger.Debug("load_lfb - load round and block",
 			zap.Int64("round", lfbRound),
 			zap.String("block", lfbHash))
@@ -554,17 +558,7 @@ loop:
 			sc.SetCurrentRound(bl.lfb.Round)
 		}
 
-		logging.Logger.Debug("load_lfb, start to load latest finalized magic block from store")
-		// and then, check out related LFMB can be missing
-		bl.lfmb, err = sc.loadLatestFinalizedMagicBlockFromStore(ctx, bl.lfb)
-		if err != nil {
-			logging.Logger.Warn("load_lfb, missing corresponding lfmb",
-				zap.Int64("round", bl.r.Number),
-				zap.String("block_hash", bl.r.BlockHash),
-				zap.String("lfmb_hash", bl.lfb.LatestFinalizedMagicBlockHash))
-			// we can't skip to starting round, because we don't know it
-			return err // the nil is 'use genesis'
-		}
+		bl.lfmb = sc.GetLatestFinalizedMagicBlock(ctx)
 
 		// setup all related for a non-genesis case
 		err := sc.setupLatestBlocks(ctx, bl)
