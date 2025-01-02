@@ -82,7 +82,7 @@ func (cmd *cmdMagicBlock) setupNodes() error {
 		cmd.yml.MinersMap[v.ID] = v
 		v.CreationDate = common.Now()
 		v.Type = cmd.block.Miners.Type
-		if err := cmd.block.Miners.AddNode(&v.Node, "Miner : func (cmd *cmdMagicBlock) setupNodes() error"); err != nil {
+		if err := cmd.block.Miners.AddNode(&v.Node); err != nil {
 			return err
 		}
 	}
@@ -90,7 +90,7 @@ func (cmd *cmdMagicBlock) setupNodes() error {
 		cmd.yml.ShardersMap[v.ID] = v
 		v.CreationDate = common.Now()
 		v.Type = cmd.block.Sharders.Type
-		if err := cmd.block.Sharders.AddNode(&v.Node, "Sharder : func (cmd *cmdMagicBlock) setupNodes() error"); err != nil {
+		if err := cmd.block.Sharders.AddNode(&v.Node); err != nil {
 			return err
 		}
 	}

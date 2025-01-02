@@ -2374,7 +2374,6 @@ func (c *Chain) IsActiveInChain() bool {
 }
 
 func (c *Chain) UpdateMagicBlock(newMagicBlock *block.MagicBlock) error {
-	logging.Logger.Info("Jayash UpdateMagicBlock", zap.Any("newMagicBlock", newMagicBlock))
 	if newMagicBlock.Miners == nil || newMagicBlock.Miners.Size() == 0 {
 		return common.NewError("failed to update magic block",
 			"there are no miners in the magic block")

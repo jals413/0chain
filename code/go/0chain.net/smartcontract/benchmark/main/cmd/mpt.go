@@ -95,13 +95,13 @@ func getBalances(
 			n.PublicKey = data.SharderKeys[i]
 			n.Type = node.NodeTypeSharder
 			n.SetSignatureSchemeType(encryption.SignatureSchemeBls0chain)
-			if err := magicBlock.Sharders.AddNode(n, "Sharders : func getBalances("); err != nil {
+			if err := magicBlock.Sharders.AddNode(n); err != nil {
 				log.Fatal(err)
 			}
 		}
 		magicBlockSharder.ID = data.InactiveSharder
 		magicBlockSharder.PublicKey = data.InactiveSharderPK
-		if err := magicBlock.Sharders.AddNode(&magicBlockSharder, "Miners : func getBalances("); err != nil {
+		if err := magicBlock.Sharders.AddNode(&magicBlockSharder); err != nil {
 			log.Fatal(err)
 		}
 		edb = data.EventDb
