@@ -32,31 +32,3 @@ func (edb *EventDb) GetChallengePool(allocationID string) (*ChallengePool, error
 func mergeAddChallengePoolsEvents() *eventsMergerImpl[ChallengePool] {
 	return newEventsMerger[ChallengePool](TagAddOrUpdateChallengePool, withUniqueEventOverwrite())
 }
-
-func mergeToChallengePoolsEvents() *eventsMergerImpl[ChallengePool] {
-	return newEventsMerger[ChallengePool](TagToChallengePool, withMergeToChallengePool())
-}
-
-func mergeFromChallengePoolsEvents() *eventsMergerImpl[ChallengePool] {
-	return newEventsMerger[ChallengePool](TagFromChallengePool, withMergeFromChallengePool())
-}
-
-func withMergeToChallengePool() eventMergeMiddleware {
-	return withEventMerge(func(a, b *ChallengePool) (*ChallengePool, error) {
-		a.Balance += b.Balance
-		a.StartTime = b.StartTime
-		a.Expiration = b.Expiration
-		a.Finalized = b.Finalized
-		return a, nil
-	})
-}
-
-func withMergeFromChallengePool() eventMergeMiddleware {
-	return withEventMerge(func(a, b *ChallengePool) (*ChallengePool, error) {
-		a.Balance -= b.Balance
-		a.StartTime = b.StartTime
-		a.Expiration = b.Expiration
-		a.Finalized = b.Finalized
-		return a, nil
-	})
-}
