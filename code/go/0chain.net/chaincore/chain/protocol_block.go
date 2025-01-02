@@ -350,9 +350,13 @@ func (c *Chain) finalizeBlock(ctx context.Context, fb *block.Block, bsh BlockSta
 		ms.GenerationCountByRank[idx]++
 	}
 
+	var steadyStateFinalityDuration int64
+
 	if time.Since(ssFTs) < 20*time.Second {
 		SteadyStateFinalizationTimer.UpdateSince(ssFTs)
+		steadyStateFinalityDuration = time.Since(ssFTs).Milliseconds()
 	}
+
 	if time.Since(fb.ToTime()) < 100*time.Second {
 		StartToFinalizeTimer.UpdateSince(fb.ToTime())
 	}
@@ -410,7 +414,7 @@ func (c *Chain) finalizeBlock(ctx context.Context, fb *block.Block, bsh BlockSta
 	if len(fb.Events) > 0 && c.GetEventDb() != nil {
 		wg.Run("finalize block - add events", fb.Round, func() error {
 			if !hasBlockFinalizeEvent(fb.Events) {
-				fb.Events = append(fb.Events, block.CreateFinalizeBlockEvent(fb))
+				fb.Events = append(fb.Events, block.CreateFinalizeBlockEvent(fb, steadyStateFinalityDuration))
 			}
 			ts := time.Now()
 			var er error
