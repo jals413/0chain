@@ -5,8 +5,12 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"0chain.net/core/common"
 	"0chain.net/core/datastore"
 	"0chain.net/core/ememorystore"
+	"github.com/0chain/common/core/logging"
+	"github.com/0chain/common/core/util"
+	"go.uber.org/zap"
 )
 
 type MagicBlockData struct {
@@ -76,5 +80,44 @@ func LoadMagicBlock(ctx context.Context, id string) (mb *MagicBlock,
 		return
 	}
 	mb = mbd.MagicBlock
+	return
+}
+
+func LoadLatestMB(ctx context.Context, lfbRound, mbNumber int64) (mb *MagicBlock, err error) {
+	if mbNumber > 0 {
+		mbStr := strconv.FormatInt(mbNumber, 10)
+		mb, err = LoadMagicBlock(ctx, mbStr)
+		if err != nil {
+			logging.Logger.Error("load_latest_mb", zap.Error(err), zap.Int64("mb number", mbNumber))
+			return
+		}
+		logging.Logger.Info("[mvc] find latest MB by magic bock number", zap.Int64("mb number", mbNumber))
+		return mb, nil
+	}
+
+	var (
+		mbemd = datastore.GetEntityMetadata("magicblockdata")
+		rctx  = ememorystore.WithEntityConnection(ctx, mbemd)
+		conn  = ememorystore.GetEntityCon(rctx, mbemd)
+	)
+	defer ememorystore.Close(rctx)
+
+	iter := conn.Conn.NewIterator(conn.ReadOptions)
+	defer iter.Close()
+	// the first time the hardfork is happened
+	var data = mbemd.Instance().(*MagicBlockData)
+	iter.SeekToLast() // from last
+
+	if !iter.Valid() {
+		return nil, util.ErrValueNotPresent
+	}
+
+	if err = datastore.FromJSON(iter.Value().Data(), data); err != nil {
+		return nil, common.NewErrorf("load_latest_mb",
+			"decoding error: %v, key: %q", err, string(iter.Key().Data()))
+	}
+
+	mb = data.MagicBlock
+	logging.Logger.Info("[mvc] seek to the last in MB store", zap.Int64("mb number", mb.MagicBlockNumber))
 	return
 }

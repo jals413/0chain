@@ -1669,7 +1669,7 @@ func (mc *Chain) LoadMagicBlocksAndDKG(ctx context.Context) {
 		zap.String("block", lfbr.Hash),
 		zap.Int64("mb_round", lfbr.MagicBlockNumber))
 
-	current, err = LoadLatestMB(ctx, lfbr.Round, lfbr.MagicBlockNumber)
+	current, err = block.LoadLatestMB(ctx, lfbr.Round, lfbr.MagicBlockNumber)
 	if err != nil {
 		logging.Logger.Error("load_mbs_and_dkg -- loading the latest MB",
 			zap.Error(err))

@@ -528,6 +528,15 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 		logging.Logger.Debug("load_lfb - load from stateDB",
 			zap.Int64("round", lfbr.Round),
 			zap.String("block", lfbr.Hash))
+		// load and set up latest magic block
+		current, err := block.LoadLatestMB(ctx, lfbr.Round, lfbr.MagicBlockNumber)
+		if err != nil {
+			logging.Logger.Error("load_lfb - could not load latest magic block", zap.Error(err))
+			return err
+		}
+
+		sc.UpdateMagicBlock(current)
+
 		if lfbr.Round <= lfbRound {
 			// use LFB from state DB when:
 			// LFB from state DB is more old than LFB from event DB or
