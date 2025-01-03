@@ -302,6 +302,31 @@ func (sc *Chain) loadHighestMagicBlock(ctx context.Context,
 	return // not found
 }
 
+func (sc *Chain) loadLatestMagicBlock(ctx context.Context) (lfmb *block.Block, err error) {
+	var hmbm *block.MagicBlockMap
+	if hmbm, err = sc.GetHighestMagicBlockMap(ctx); err != nil {
+		return nil, common.NewErrorf("load_lfb",
+			"getting highest MB map: %v", err) // critical
+	}
+
+	logging.Logger.Debug("load_lfb (lfmb), got round",
+		zap.Int64("round", hmbm.BlockRound),
+		zap.String("block_hash", hmbm.Hash))
+
+	var bl *block.Block
+	bl, err = sc.GetBlockFromStore(hmbm.Hash, hmbm.BlockRound)
+	if err != nil {
+		return nil, common.NewErrorf("load_lfb",
+			"getting block with highest MB: %v", err) // critical
+	}
+
+	if bl.MagicBlock != nil {
+		return bl, nil // got it
+	}
+
+	return // not found
+}
+
 func (sc *Chain) walkDownLookingForLFB(iter *grocksdb.Iterator, r *round.Round) (lfb *block.Block, err error) {
 
 	var rollBackCount int
@@ -529,13 +554,13 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 			zap.Int64("round", lfbr.Round),
 			zap.String("block", lfbr.Hash))
 		// load and set up latest magic block
-		mbs := block.LoadLatestMBs(ctx, lfbr.MagicBlockNumber)
-		if len(mbs) == 0 {
-			logging.Logger.Error("load_lfb - could not load latest magic block")
-			return common.NewError("load_lfb", "could not see any latest magic block in local store")
-		}
+		// mbs := block.LoadLatestMBs(ctx, lfbr.MagicBlockNumber)
+		// if len(mbs) == 0 {
+		// 	logging.Logger.Error("load_lfb - could not load latest magic block")
+		// 	return common.NewError("load_lfb", "could not see any latest magic block in local store")
+		// }
 
-		sc.UpdateMagicBlock(mbs[0])
+		// sc.UpdateMagicBlock(mbs[0])
 
 		if lfbr.Round <= lfbRound {
 			// use LFB from state DB when:
@@ -545,6 +570,14 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 			lfbHash = lfbr.Hash
 		}
 	}
+
+	lfmb, err := sc.loadLatestMagicBlock(ctx)
+	if err != nil {
+		logging.Logger.Error("load_lfb, could not loading highest magic block", zap.Error(err))
+		return
+	}
+
+	sc.UpdateMagicBlock(lfmb.MagicBlock)
 
 	const maxRollbackRounds = 5
 	var i int
