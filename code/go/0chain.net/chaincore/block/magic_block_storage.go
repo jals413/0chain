@@ -121,3 +121,21 @@ func LoadLatestMB(ctx context.Context, lfbRound, mbNumber int64) (mb *MagicBlock
 	logging.Logger.Info("[mvc] seek to the last in MB store", zap.Int64("mb number", mb.MagicBlockNumber))
 	return
 }
+
+func LoadLatestMBs(ctx context.Context, fromMBNumber int64) (mbs []*MagicBlock) {
+	// iterate from fromMBNumber back 5 or till 1,
+	var count = 5
+	for i := fromMBNumber; i > 0 && count > 0; i-- {
+		count--
+		mbStr := strconv.FormatInt(i, 10)
+		mb, err := LoadMagicBlock(ctx, mbStr)
+		if err != nil {
+			logging.Logger.Error("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+			continue
+		}
+		logging.Logger.Info("[mvc] load latest MB from store", zap.Int64("mb number", mb.MagicBlockNumber))
+		mbs = append(mbs, mb)
+	}
+
+	return mbs
+}

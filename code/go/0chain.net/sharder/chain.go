@@ -529,13 +529,13 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 			zap.Int64("round", lfbr.Round),
 			zap.String("block", lfbr.Hash))
 		// load and set up latest magic block
-		current, err := block.LoadLatestMB(ctx, lfbr.Round, lfbr.MagicBlockNumber)
-		if err != nil {
-			logging.Logger.Error("load_lfb - could not load latest magic block", zap.Error(err))
-			return err
+		mbs := block.LoadLatestMBs(ctx, lfbr.MagicBlockNumber)
+		if len(mbs) == 0 {
+			logging.Logger.Error("load_lfb - could not load latest magic block")
+			return common.NewError("load_lfb", "could not see any latest magic block in local store")
 		}
 
-		sc.UpdateMagicBlock(current)
+		sc.UpdateMagicBlock(mbs[0])
 
 		if lfbr.Round <= lfbRound {
 			// use LFB from state DB when:
