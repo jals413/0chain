@@ -228,7 +228,7 @@ func mergeEvents(round int64, block string, events []Event) ([]Event, error) {
 			mergeStakePoolRewardsEvents(),
 			mergeStakePoolPenaltyEvents(),
 			mergeAddDelegatePoolsEvents(),
-			//mergeUpdateDelegatePoolEvents(),
+			mergeUpdateDelegatePoolEvents(),
 
 			mergeUpdateMinerTotalStakesEvents(),
 			mergeUpdateSharderTotalStakesEvents(),
