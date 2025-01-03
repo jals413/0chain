@@ -1918,7 +1918,8 @@ func Test_updateAllocationRequest_validate(t *testing.T) {
 			if tt.name == "Positive case" {
 				alloc.BlobberAllocs = []*BlobberAllocation{{}}
 			}
-			err := tt.uar.validate(clientId, nil, alloc)
+			balances := newTestBalances(t, false)
+			err := tt.uar.validate(clientId, balances, alloc)
 
 			if tt.expectErr && err == nil {
 				t.Error("Expected an error, but got nil")
