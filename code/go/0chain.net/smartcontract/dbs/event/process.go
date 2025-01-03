@@ -190,9 +190,9 @@ func mergeEvents(round int64, block string, events []Event) ([]Event, error) {
 		mergers = []eventsMerger{
 			mergeAddUsersEvents(),
 			mergeAddProviderEvents[Miner](TagAddMiner, withUniqueEventOverwrite()),
-			//mergeAddProviderEvents[dbs.DbUpdates](TagUpdateMiner, withUniqueEventOverwrite()),
+			mergeAddProviderEvents[dbs.DbUpdates](TagUpdateMiner, withUniqueEventOverwrite()),
 			mergeAddProviderEvents[Sharder](TagAddSharder, withUniqueEventOverwrite()),
-			//mergeAddProviderEvents[dbs.DbUpdates](TagUpdateSharder, withUniqueEventOverwrite()),
+			mergeAddProviderEvents[dbs.DbUpdates](TagUpdateSharder, withUniqueEventOverwrite()),
 			mergeAddProviderEvents[Blobber](TagAddBlobber, withUniqueEventOverwrite()),
 			mergeAddProviderEvents[Blobber](TagUpdateBlobber, withUniqueEventOverwrite()),
 			mergeAddProviderEvents[Authorizer](TagAddAuthorizer, withUniqueEventOverwrite()),
