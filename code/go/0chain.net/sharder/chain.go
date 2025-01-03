@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"0chain.net/chaincore/transaction"
@@ -327,6 +328,101 @@ func (sc *Chain) loadLatestMagicBlock(ctx context.Context) (lfmb *block.Block, e
 	return // not found
 }
 
+func (sc *Chain) LoadLatestMBs(ctx context.Context, fromMBNumber int64) (mbs []*block.Block) {
+	// iterate from fromMBNumber back 5 or till 1,
+	var count = 5
+	mbs = make([]*block.Block, 0, count)
+	for i := fromMBNumber; i > 0 && count > 0; i-- {
+		count--
+		mbStr := strconv.FormatInt(i, 10)
+		mb, err := sc.GetMagicBlockMap(ctx, mbStr)
+		if err != nil {
+			logging.Logger.Error("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+			continue
+		}
+		logging.Logger.Info("load_latest_mb load latest MB from store", zap.Int64("mb number", fromMBNumber))
+		b, err := sc.GetBlockFromHash(ctx, mb.Hash, mb.BlockRound)
+		if err != nil {
+			logging.Logger.Error("load_latest_mb failed to load block from store",
+				zap.Error(err),
+				zap.Int64("mb number", i),
+				zap.Int64("round", mb.BlockRound),
+				zap.String("hash", mb.Hash))
+			continue
+		}
+		mbs = append(mbs, b)
+	}
+
+	return mbs
+}
+
+func (sc *Chain) LoadLatestFinalizedMagicBlockFromStore(ctx context.Context) {
+	lfmb := sc.GetLatestMagicBlock()
+	// load the latest N magic blocks
+	n := int64(5) // TODO: read from config
+	retry := 3
+
+	if lfmb.MagicBlockNumber <= 1 {
+		return
+	}
+
+	// magic block number start from 1, the genesis block
+	startNum := int64(2) // 1 is the genesis block, we have it locally, so don't need to fetch from remote
+	if lfmb.MagicBlockNumber < startNum {
+		// genesis block, return
+		return
+	}
+
+	newStart := lfmb.MagicBlockNumber - n
+	if newStart > startNum {
+		startNum = newStart
+	}
+
+	for i := startNum; i <= lfmb.MagicBlockNumber; i++ {
+		// load MB from local store
+		mbStr := strconv.FormatInt(i, 10)
+		prevMbStr := strconv.FormatInt(i-1, 10)
+		mb, err := block.LoadMagicBlock(ctx, mbStr)
+		if err != nil {
+			logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+		}
+
+		var prevMb *block.MagicBlock
+		if i == 2 {
+			// previous magic block is the genesis block
+			prevMb = sc.GetMagicBlock(1)
+		} else {
+			prevMb, err = block.LoadMagicBlock(ctx, prevMbStr)
+			if err != nil {
+				logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+			}
+		}
+
+		// load and set prev mb if not in chain.MagicBlockStorage so that
+		// blocks fetch process can verify tickets
+		// if mc.MagicBlockStorage.GetByStartingRound(prevMb.StartingRound) == nil {
+		sc.MagicBlockStorage.Put(prevMb, prevMb.StartingRound)
+		// } else {
+		// 	logging.Logger.Error("[mvc] load prev MB by magic bock number",
+		// 		zap.Int64("mb number", i),
+
+		// }
+
+		logging.Logger.Info("[mvc] load MB by magic bock number", zap.Int64("mb number", i))
+		for j := 0; j < retry; j++ {
+			bmb, err := sc.GetNotarizedBlockFromSharders(ctx, "", mb.StartingRound)
+			if err != nil {
+				logging.Logger.Error("load_lfb - could not fetch latest finalized magic block from sharders",
+					zap.Int64("mb_starting_round", lfmb.StartingRound), zap.Error(err))
+				time.Sleep(3 * time.Second)
+				continue
+			}
+			sc.UpdateMagicBlocks(bmb)
+			break
+		}
+	}
+}
+
 func (sc *Chain) walkDownLookingForLFB(iter *grocksdb.Iterator, r *round.Round) (lfb *block.Block, err error) {
 
 	var rollBackCount int
@@ -554,13 +650,17 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 			zap.Int64("round", lfbr.Round),
 			zap.String("block", lfbr.Hash))
 		// load and set up latest magic block
-		// mbs := block.LoadLatestMBs(ctx, lfbr.MagicBlockNumber)
-		// if len(mbs) == 0 {
-		// 	logging.Logger.Error("load_lfb - could not load latest magic block")
-		// 	return common.NewError("load_lfb", "could not see any latest magic block in local store")
-		// }
+		mbs := sc.LoadLatestMBs(ctx, lfbr.MagicBlockNumber)
+		if len(mbs) == 0 {
+			logging.Logger.Error("load_lfb - could not load latest magic block")
+			return common.NewError("load_lfb", "could not see any latest magic block in local store")
+		}
 
-		// sc.UpdateMagicBlock(mbs[0])
+		for i := len(mbs) - 1; i >= 0; i-- {
+			sc.SetMagicBlock(mbs[i].MagicBlock)
+		}
+
+		sc.UpdateMagicBlock(mbs[0].MagicBlock)
 
 		if lfbr.Round <= lfbRound {
 			// use LFB from state DB when:
@@ -571,13 +671,13 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 		}
 	}
 
-	lfmb, err := sc.loadLatestMagicBlock(ctx)
-	if err != nil {
-		logging.Logger.Error("load_lfb, could not loading highest magic block", zap.Error(err))
-		return
-	}
+	// lfmb, err := sc.loadLatestMagicBlock(ctx)
+	// if err != nil {
+	// 	logging.Logger.Error("load_lfb, could not loading highest magic block", zap.Error(err))
+	// 	return
+	// }
 
-	sc.UpdateMagicBlock(lfmb.MagicBlock)
+	// sc.UpdateMagicBlock(lfmb.MagicBlock)
 
 	const maxRollbackRounds = 5
 	var i int
@@ -586,7 +686,7 @@ loop:
 	for {
 		logging.Logger.Debug("load_lfb, start to load latest finalized magic block from store")
 		// and then, check out related LFMB can be missing
-		sc.LoadLatestFinalizedMagicBlockFromStore(ctx)
+		// sc.LoadLatestFinalizedMagicBlockFromStore(ctx)
 
 		logging.Logger.Debug("load_lfb - load round and block",
 			zap.Int64("round", lfbRound),
@@ -658,10 +758,10 @@ loop:
 	// it is the latest magic block, we have to load it and setup
 
 	// using another round instance
-	bl.nlfmb, err = sc.loadHighestMagicBlock(ctx, bl.lfb)
-	if err != nil {
-		logging.Logger.Warn("load_lfb, loading highest magic block", zap.Error(err))
-	}
+	// bl.nlfmb, err = sc.loadHighestMagicBlock(ctx, bl.lfb)
+	// if err != nil {
+	// 	logging.Logger.Warn("load_lfb, loading highest magic block", zap.Error(err))
+	// }
 
 	// return bl // got them all (or excluding the nlfmb)
 
