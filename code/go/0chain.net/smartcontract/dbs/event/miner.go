@@ -257,24 +257,34 @@ func (mn *Miner) exists(edb *EventDb) (bool, error) {
 	return true, nil
 }
 
-func (edb *EventDb) updateMiner(updates dbs.DbUpdates) error {
-	var miner = Miner{Provider: Provider{ID: updates.Id}}
-	exists, err := miner.exists(edb)
+func (edb *EventDb) updateMiner(updates []dbs.DbUpdates) error {
+	errs := make([]error, 0)
+	for _, update := range updates {
+		var miner = Miner{Provider: Provider{ID: update.Id}}
+		exists, err := miner.exists(edb)
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("miner %v not in database cannot update",
+				miner.ID)
+		}
+
+		result := edb.Store.Get().
+			Model(&Miner{}).
+			Where(&Miner{Provider: Provider{ID: miner.ID}}).
+			Updates(update.Updates)
+
+		if result.Error != nil {
+			errs = append(errs, result.Error)
+		}
 	}
-	if !exists {
-		return fmt.Errorf("miner %v not in database cannot update",
-			miner.ID)
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors updating miners %v", errs)
 	}
-
-	result := edb.Store.Get().
-		Model(&Miner{}).
-		Where(&Miner{Provider: Provider{ID: miner.ID}}).
-		Updates(updates.Updates)
-
-	return result.Error
+	return nil
 }
 
 func (edb *EventDb) updateMinerBlocksFinalised(minerID string) error {
