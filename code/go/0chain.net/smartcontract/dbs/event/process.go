@@ -817,7 +817,7 @@ func (edb *EventDb) addStat(event Event) (err error) {
 		}
 		return edb.addMiner(*miners)
 	case TagUpdateMiner:
-		updates, ok := fromEvent[dbs.DbUpdates](event.Data)
+		updates, ok := fromEvent[[]dbs.DbUpdates](event.Data)
 		if !ok {
 			return ErrInvalidEventData
 		}
@@ -842,7 +842,7 @@ func (edb *EventDb) addStat(event Event) (err error) {
 		}
 		return edb.updateMinersTotalStakes(*m)
 	case TagUpdateSharder:
-		updates, ok := fromEvent[dbs.DbUpdates](event.Data)
+		updates, ok := fromEvent[[]dbs.DbUpdates](event.Data)
 		if !ok {
 			return ErrInvalidEventData
 		}
@@ -868,7 +868,7 @@ func (edb *EventDb) addStat(event Event) (err error) {
 		}
 		return edb.addDelegatePools(*dps)
 	case TagUpdateDelegatePool:
-		spUpdate, ok := fromEvent[dbs.DelegatePoolUpdate](event.Data)
+		spUpdate, ok := fromEvent[[]dbs.DelegatePoolUpdate](event.Data)
 		if !ok {
 			return ErrInvalidEventData
 		}
