@@ -190,7 +190,7 @@ func mergeEvents(round int64, block string, events []Event) ([]Event, error) {
 		mergers = []eventsMerger{
 			mergeAddUsersEvents(),
 			mergeAddProviderEvents[Miner](TagAddMiner, withUniqueEventOverwrite()),
-			//mergeAddProviderEvents[dbs.DbUpdates](TagUpdateMiner, withUniqueEventOverwrite()),
+			mergeAddProviderEvents[dbs.DbUpdates](TagUpdateMiner, withUniqueEventOverwrite()),
 			mergeAddProviderEvents[Sharder](TagAddSharder, withUniqueEventOverwrite()),
 			mergeAddProviderEvents[dbs.DbUpdates](TagUpdateSharder, withUniqueEventOverwrite()),
 			mergeAddProviderEvents[Blobber](TagAddBlobber, withUniqueEventOverwrite()),
@@ -819,7 +819,8 @@ func (edb *EventDb) addStat(event Event) (err error) {
 	case TagUpdateMiner:
 		updates, ok := fromEvent[[]dbs.DbUpdates](event.Data)
 		if !ok {
-			return ErrInvalidEventData
+			logging.Logger.Info("error updating miner", zap.Any("event", event))
+			return errors.New("error updating miner")
 		}
 		return edb.updateMiner(*updates)
 	case TagDeleteMiner:
@@ -844,7 +845,8 @@ func (edb *EventDb) addStat(event Event) (err error) {
 	case TagUpdateSharder:
 		updates, ok := fromEvent[[]dbs.DbUpdates](event.Data)
 		if !ok {
-			return ErrInvalidEventData
+			logging.Logger.Info("error updating miner", zap.Any("event", event))
+			return errors.New("error updating sharder")
 		}
 		return edb.updateSharder(*updates)
 	case TagDeleteSharder:
@@ -870,7 +872,8 @@ func (edb *EventDb) addStat(event Event) (err error) {
 	case TagUpdateDelegatePool:
 		spUpdate, ok := fromEvent[[]dbs.DelegatePoolUpdate](event.Data)
 		if !ok {
-			return ErrInvalidEventData
+			logging.Logger.Info("error updating delegate pool", zap.Any("event", event))
+			return errors.New("error updating delegate pool")
 		}
 		return edb.updateDelegatePool(*spUpdate)
 	case TagStakePoolReward:
