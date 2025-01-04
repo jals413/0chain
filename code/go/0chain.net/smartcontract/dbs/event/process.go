@@ -819,8 +819,7 @@ func (edb *EventDb) addStat(event Event) (err error) {
 	case TagUpdateMiner:
 		updates, ok := fromEvent[[]dbs.DbUpdates](event.Data)
 		if !ok {
-			logging.Logger.Info("error updating miner", zap.Any("event", event))
-			return errors.New("error updating miner")
+			return ErrInvalidEventData
 		}
 		return edb.updateMiner(*updates)
 	case TagDeleteMiner:
@@ -845,8 +844,7 @@ func (edb *EventDb) addStat(event Event) (err error) {
 	case TagUpdateSharder:
 		updates, ok := fromEvent[[]dbs.DbUpdates](event.Data)
 		if !ok {
-			logging.Logger.Info("error updating miner", zap.Any("event", event))
-			return errors.New("error updating sharder")
+			return ErrInvalidEventData
 		}
 		return edb.updateSharder(*updates)
 	case TagDeleteSharder:
@@ -872,8 +870,7 @@ func (edb *EventDb) addStat(event Event) (err error) {
 	case TagUpdateDelegatePool:
 		spUpdate, ok := fromEvent[[]dbs.DelegatePoolUpdate](event.Data)
 		if !ok {
-			logging.Logger.Info("error updating delegate pool", zap.Any("event", event))
-			return errors.New("error updating delegate pool")
+			return ErrInvalidEventData
 		}
 		return edb.updateDelegatePool(*spUpdate)
 	case TagStakePoolReward:
