@@ -619,7 +619,7 @@ func TestChangeBlobbers(t *testing.T) {
 			_, err := sa.changeBlobbers(&Config{TimeUnit: confTimeUnit}, blobbers, addID, "", removeID, now, balances, sc, &transaction.Transaction{
 				ClientID:     clientId,
 				CreationDate: now,
-			}, false, 0)
+			}, false, 0, 0)
 			require.EqualValues(t, tt.want.err, err != nil)
 			if err != nil {
 				require.EqualValues(t, tt.want.errMsg, err.Error())
@@ -1823,10 +1823,6 @@ func Test_updateAllocationRequest_decode(t *testing.T) {
 }
 
 func Test_updateAllocationRequest_validate(t *testing.T) {
-
-	config := &Config{
-		MinAllocSize: 1 * GB,
-	}
 	alloc := &storageAllocationBase{
 		BlobberAllocsMap: make(map[string]*BlobberAllocation),
 		Owner:            "owner123",
@@ -1926,7 +1922,8 @@ func Test_updateAllocationRequest_validate(t *testing.T) {
 			if tt.name == "Positive case" {
 				alloc.BlobberAllocs = []*BlobberAllocation{{}}
 			}
-			err := tt.uar.validate(config, alloc)
+			balances := newTestBalances(t, false)
+			err := tt.uar.validate(clientId, balances, alloc)
 
 			if tt.expectErr && err == nil {
 				t.Error("Expected an error, but got nil")
@@ -3972,10 +3969,10 @@ func TestBlobberVerifyAuthTicket(t *testing.T) {
 	balances := newTestBalances(t, false)
 	wallet := newClient(1000*x10, balances)
 	b0Wallet := newClient(1000*x10, balances)
-	blobber0AuthTicket, err := b0Wallet.scheme.Sign(wallet.id)
+	blobber0AuthTicket, err := b0Wallet.scheme.Sign(fmt.Sprintf("%s_%d", wallet.id, 3300))
 	require.NoError(t, err)
 
-	ok, err := verifyBlobberAuthTicket(balances, wallet.id, blobber0AuthTicket, b0Wallet.pk)
+	ok, err := verifyBlobberAuthTicket(balances, wallet.id, blobber0AuthTicket, b0Wallet.pk, 3300)
 	require.NoError(t, err)
 	require.True(t, ok)
 }
