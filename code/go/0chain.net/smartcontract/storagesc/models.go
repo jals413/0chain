@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1681,9 +1682,9 @@ func verifyBlobberAuthTicket(balances cstate.StateContextI, clientID, authTicket
 		return nil
 	}, func() error {
 		if roundExpiry < balances.GetBlock().Round {
-			return common.NewError("auth_ticket_expired", "auth ticket expired")
+			return common.NewError("auth_ticket_expired", "auth ticket expired, current round: "+strconv.FormatInt(balances.GetBlock().Round, 10)+", expiry round: "+strconv.FormatInt(roundExpiry, 10))
 		}
-		payload = fmt.Sprintf("%s_%d", clientID, roundExpiry)
+		payload = encryption.Hash(fmt.Sprintf("%s_%d", clientID, roundExpiry))
 
 		return nil
 	}); actErr != nil {
@@ -1696,7 +1697,8 @@ func verifyBlobberAuthTicket(balances cstate.StateContextI, clientID, authTicket
 	if err := signatureScheme.SetPublicKey(publicKey); err != nil {
 		return false, err
 	}
-	return signatureScheme.Verify(authTicket, payload)
+	success, err := signatureScheme.Verify(authTicket, payload)
+	return success, err
 }
 
 // Until returns allocation expiration.
