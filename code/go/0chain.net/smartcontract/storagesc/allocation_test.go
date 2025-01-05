@@ -907,6 +907,11 @@ func enableHardForks(t *testing.T, tb chainState.StateContextI) {
 	if _, err := tb.InsertTrieNode(h.GetKey(), h); err != nil {
 		t.Fatal(err)
 	}
+
+	h = chainState.NewHardFork("hermes", 0)
+	if _, err := tb.InsertTrieNode(h.GetKey(), h); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestStorageSmartContract_getAllocation(t *testing.T) {
@@ -1267,6 +1272,7 @@ func TestStorageSmartContract_newAllocationRequest(t *testing.T) {
 		nar.Blobbers = nil // not set
 		nar.Owner = wallet.id
 		nar.OwnerPublicKey = wallet.pk
+		nar.AuthRoundExpiry = 10000000000
 
 		var tempTxn transaction.Transaction
 		tempTxn.Hash = txHash
@@ -1319,9 +1325,9 @@ func TestStorageSmartContract_newAllocationRequest(t *testing.T) {
 		_, err = ssc.newAllocationRequest(&tempTxn, mustEncode(t, &nar), balances, nil)
 		requireErrMsg(t, err, "allocation_creation_failed: Not enough blobbers to honor the allocation: blobber b1 auth ticket verification failed: invalid_auth_ticket: empty auth ticket, blobber b2 auth ticket verification failed: invalid_auth_ticket: empty auth ticket")
 
-		blobber0AuthTicket, err := b0Wallet.scheme.Sign(wallet.id)
+		blobber0AuthTicket, err := b0Wallet.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", wallet.id, 10000000000)))
 		require.NoError(t, err)
-		blobber1AuthTicket, err := b1Wallet.scheme.Sign(wallet.id)
+		blobber1AuthTicket, err := b1Wallet.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", wallet.id, 10000000000)))
 		require.NoError(t, err)
 
 		nar.BlobberAuthTickets = []string{blobber0AuthTicket, blobber1AuthTicket}
@@ -1565,6 +1571,7 @@ func TestStorageSmartContract_newAllocationRequest(t *testing.T) {
 		nar.Blobbers = nil // not set
 		nar.Owner = wallet.id
 		nar.OwnerPublicKey = wallet.pk
+		nar.AuthRoundExpiry = 10000000000
 
 		nar.IsEnterprise = true
 
@@ -1620,9 +1627,9 @@ func TestStorageSmartContract_newAllocationRequest(t *testing.T) {
 		_, err = ssc.newAllocationRequest(&tempTxn, mustEncode(t, &nar), balances, nil)
 		requireErrMsg(t, err, "allocation_creation_failed: Not enough blobbers to honor the allocation: blobber b1 auth ticket verification failed: invalid_auth_ticket: empty auth ticket, blobber b2 auth ticket verification failed: invalid_auth_ticket: empty auth ticket")
 
-		blobber0AuthTicket, err := b0Wallet.scheme.Sign(wallet.id)
+		blobber0AuthTicket, err := b0Wallet.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", wallet.id, 10000000000)))
 		require.NoError(t, err)
-		blobber1AuthTicket, err := b1Wallet.scheme.Sign(wallet.id)
+		blobber1AuthTicket, err := b1Wallet.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", wallet.id, 10000000000)))
 		require.NoError(t, err)
 
 		nar.BlobberAuthTickets = []string{blobber0AuthTicket, blobber1AuthTicket}
@@ -1646,6 +1653,7 @@ func TestStorageSmartContract_newAllocationRequest(t *testing.T) {
 		nar.Blobbers = nil // not set
 		nar.Owner = wallet.id
 		nar.OwnerPublicKey = wallet.pk
+		nar.AuthRoundExpiry = 10000000000
 
 		nar.IsEnterprise = true
 
@@ -1697,9 +1705,9 @@ func TestStorageSmartContract_newAllocationRequest(t *testing.T) {
 		_, err = balances.InsertTrieNode(b1.GetKey(), b1)
 		require.NoError(t, err)
 
-		blobber0AuthTicket, err := b0Wallet.scheme.Sign(wallet.id)
+		blobber0AuthTicket, err := b0Wallet.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", wallet.id, 10000000000)))
 		require.NoError(t, err)
-		blobber1AuthTicket, err := b1Wallet.scheme.Sign(wallet.id)
+		blobber1AuthTicket, err := b1Wallet.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", wallet.id, 10000000000)))
 		require.NoError(t, err)
 
 		nar.BlobberAuthTickets = []string{blobber0AuthTicket, blobber1AuthTicket}
@@ -1738,6 +1746,7 @@ func TestStorageSmartContract_newAllocationRequest(t *testing.T) {
 		nar.Owner = wallet.id
 		nar.OwnerPublicKey = wallet.pk
 		nar.StorageVersion = 1
+		nar.AuthRoundExpiry = 10000000000
 
 		nar.IsEnterprise = true
 
@@ -1794,9 +1803,9 @@ func TestStorageSmartContract_newAllocationRequest(t *testing.T) {
 		_, err = ssc.newAllocationRequest(&tempTxn, mustEncode(t, &nar), balances, nil)
 		requireErrMsg(t, err, "allocation_creation_failed: Not enough blobbers to honor the allocation: blobber b1 auth ticket verification failed: invalid_auth_ticket: empty auth ticket, blobber b2 auth ticket verification failed: invalid_auth_ticket: empty auth ticket")
 
-		blobber0AuthTicket, err := b0Wallet.scheme.Sign(wallet.id)
+		blobber0AuthTicket, err := b0Wallet.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", wallet.id, 10000000000)))
 		require.NoError(t, err)
-		blobber1AuthTicket, err := b1Wallet.scheme.Sign(wallet.id)
+		blobber1AuthTicket, err := b1Wallet.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", wallet.id, 10000000000)))
 		require.NoError(t, err)
 
 		nar.BlobberAuthTickets = []string{blobber0AuthTicket, blobber1AuthTicket}
@@ -2978,6 +2987,7 @@ func TestUpdateAllocationRequest(t *testing.T) {
 		uar.ID = allocID
 		uar.AddBlobberId = nb3.id
 		uar.AddBlobberAuthTicket = ""
+		uar.AuthRoundExpiry = 100000000
 		resp, err := uar.callUpdateAllocReq(t, client.id, 0, tp, ssc, balances)
 		expectedErr := common.NewError("allocation_updating_failed", fmt.Sprintf("blobber %s is not enterprise", nb3.id))
 		require.ErrorIs(t, expectedErr, err)
@@ -3001,7 +3011,7 @@ func TestUpdateAllocationRequest(t *testing.T) {
 		expectedErr = common.NewError("allocation_updating_failed", fmt.Sprintf("blobber %s auth ticket verification failed: invalid_auth_ticket: empty auth ticket", nb3.id))
 		require.ErrorIs(t, expectedErr, err)
 
-		b3AuthTicket, err := nb3.scheme.Sign(client.id)
+		b3AuthTicket, err := nb3.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", client.id, 100000000)))
 		require.NoError(t, err)
 		uar.AddBlobberAuthTicket = b3AuthTicket
 
@@ -3082,6 +3092,7 @@ func TestUpdateAllocationRequest(t *testing.T) {
 		uar.ID = allocID
 		uar.AddBlobberId = nb3.id
 		uar.AddBlobberAuthTicket = ""
+		uar.AuthRoundExpiry = 100000000
 		uar.RemoveBlobberId = beforeAlloc.BlobberAllocs[0].BlobberID
 		resp, err := uar.callUpdateAllocReq(t, client.id, 0, tp, ssc, balances)
 		expectedErr := common.NewError("allocation_updating_failed", fmt.Sprintf("blobber %s is not enterprise", nb3.id))
@@ -3102,7 +3113,7 @@ func TestUpdateAllocationRequest(t *testing.T) {
 		expectedErr = common.NewError("allocation_updating_failed", fmt.Sprintf("blobber %s auth ticket verification failed: invalid_auth_ticket: empty auth ticket", nb3.id))
 		require.ErrorIs(t, expectedErr, err)
 
-		b3AuthTicket, err := nb3.scheme.Sign(client.id)
+		b3AuthTicket, err := nb3.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", client.id, 100000000)))
 		require.NoError(t, err)
 		uar.AddBlobberAuthTicket = b3AuthTicket
 
@@ -3965,7 +3976,7 @@ func TestBlobberVerifyAuthTicket(t *testing.T) {
 	balances := newTestBalances(t, false)
 	wallet := newClient(1000*x10, balances)
 	b0Wallet := newClient(1000*x10, balances)
-	blobber0AuthTicket, err := b0Wallet.scheme.Sign(fmt.Sprintf("%s_%d", wallet.id, 3300))
+	blobber0AuthTicket, err := b0Wallet.scheme.Sign(encryption.Hash(fmt.Sprintf("%s_%d", wallet.id, 3300)))
 	require.NoError(t, err)
 
 	ok, err := verifyBlobberAuthTicket(balances, wallet.id, blobber0AuthTicket, b0Wallet.pk, 3300)
