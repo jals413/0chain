@@ -10,14 +10,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/0chain/common/core/logging"
-	"github.com/rcrowley/go-metrics"
-	"go.uber.org/zap"
-
 	"0chain.net/chaincore/client"
 	"0chain.net/core/common"
 	"0chain.net/core/encryption"
 	"0chain.net/core/viper"
+	"github.com/rcrowley/go-metrics"
 )
 
 //go:generate msgp -io=false -tests=false -v
@@ -713,7 +710,6 @@ func (n *Node) Clone() *Node {
 
 	ps, ok := n.ProtocolStats.(interface{ Clone() interface{} })
 	if ok {
-		logging.Logger.Info("cloning protocol stats", zap.Any("stats", ps))
 		clone.ProtocolStats = ps.Clone()
 	}
 
