@@ -377,11 +377,13 @@ func filterOutInvalidRegisterMiners(balances cstate.StateContextI,
 
 	logging.Logger.Info("Jayash_debug filterOutInvalidRegisterMiners", zap.Any("toAddMinerIDs", toAddMinerIDs))
 
+	var validMinerIDs []string
 	for _, mid := range toAddMinerIDs {
 		// see if to add is in the all miners map, if not remove it from the register list and try next one
 		if n, ok := allMinersMap[mid]; ok {
 			logging.Logger.Debug("[mvc] createDKGMinersForContribute, add register node to dkg miners", zap.String("node", mid))
 			dkgMiners.SimpleNodes[mid] = n.SimpleNode
+			validMinerIDs = append(validMinerIDs, mid)
 			break
 		} else {
 			logging.Logger.Info("Jayash_debug [mvc] createDKGMinersForContribute, remove invalid register node", zap.String("node", mid))
@@ -391,8 +393,8 @@ func filterOutInvalidRegisterMiners(balances cstate.StateContextI,
 	logging.Logger.Info("Jayash_debug filterOutInvalidRegisterMiners", zap.Any("dkgMiners", dkgMiners))
 
 	if len(toAddMinerIDs) != len(regIDs) {
-		logging.Logger.Info("Jayash updateRegisterNodes", zap.Any("toAddMinerIDs", toAddMinerIDs))
-		if err := updateRegisterNodes(balances, spenum.Miner, toAddMinerIDs); err != nil {
+		logging.Logger.Info("Jayash updateRegisterNodes", zap.Any("validMinerIDs", validMinerIDs))
+		if err := updateRegisterNodes(balances, spenum.Miner, validMinerIDs); err != nil {
 			return common.NewErrorf("failed to create dkg miners", "could not update miner register nodes: %v", err)
 		}
 	}
