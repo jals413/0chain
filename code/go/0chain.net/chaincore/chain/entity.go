@@ -431,15 +431,17 @@ func (c *Chain) BlockWorker(ctx context.Context) {
 				syncing = false
 				logging.Logger.Debug("process block, no block in buffer", zap.Int64("current round", cr))
 
-				// see if the miner is in the MB, and if not, continue to sync blocks
-				mb := c.GetMagicBlock(cr)
-				if !mb.Miners.HasNode(node.Self.Underlying().GetKey()) {
-					logging.Logger.Debug("process block, miner not in the MB, continue to sync blocks",
-						zap.Int64("current round", cr),
-						zap.Int64("mb round", mb.StartingRound))
-					time.Sleep(100 * time.Millisecond)
-					syncBlocksTimer.Reset(0)
-					continue
+				if node.Self.IsMiner() {
+					// see if the miner is in the MB, and if not, continue to sync blocks
+					mb := c.GetMagicBlock(cr)
+					if !mb.Miners.HasNode(node.Self.Underlying().GetKey()) {
+						logging.Logger.Debug("process block, miner not in the MB, continue to sync blocks",
+							zap.Int64("current round", cr),
+							zap.Int64("mb round", mb.StartingRound))
+						time.Sleep(100 * time.Millisecond)
+						syncBlocksTimer.Reset(0)
+						continue
+					}
 				}
 
 				time.Sleep(100 * time.Millisecond)
@@ -2003,7 +2005,6 @@ func (c *Chain) setCurrentRound(r int64) {
 }
 
 func (c *Chain) getCurrentRound() int64 {
-	logging.Logger.Info("get_current_round", zap.Int64("current_round", c.currentRound))
 	return c.currentRound
 }
 
