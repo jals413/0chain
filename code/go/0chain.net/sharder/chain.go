@@ -661,6 +661,7 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 		}
 
 		sc.UpdateMagicBlock(mbs[0].MagicBlock)
+		sc.SetLatestFinalizedMagicBlock(mbs[0])
 
 		if lfbr.Round <= lfbRound {
 			// use LFB from state DB when:
