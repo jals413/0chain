@@ -146,6 +146,14 @@ func (sc *Chain) UpdateFinalizedBlock(ctx context.Context, b *block.Block) error
 		Logger.Panic("db error (save round)", zap.Int64("round", fr.GetRoundNumber()), zap.Error(err))
 	}
 
+	cmb := sc.GetCurrentMagicBlock()
+	if err := sc.StoreLFBRound(b.Round, cmb.MagicBlockNumber, b.Hash); err != nil {
+		Logger.Panic("db error (save lfb with magicblock round)", zap.Int64("round", b.Round),
+			zap.Int64("magicblock number", cmb.MagicBlockNumber),
+			zap.String("block", b.Hash),
+			zap.Error(err))
+	}
+
 	//nolint:errcheck
 	notifyConductor(b)
 
