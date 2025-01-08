@@ -457,6 +457,11 @@ func (edb *EventDb) WorkEvents(
 		logging.Logger.Warn("work events - lost connection")
 	}
 
+	if blockEvents.round == 19934611 {
+		// ignore this event for demo network as it has been processed
+		return []string{}, nil
+	}
+
 	currentPermanentPartition := blockEvents.round / edb.settings.PermanentPartitionChangePeriod
 	if blockEvents.round%edb.settings.PermanentPartitionChangePeriod == 0 {
 		edb.managePermanentPartitionsAsync(currentPermanentPartition)
