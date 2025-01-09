@@ -249,6 +249,7 @@ func (mc *Chain) ContributeMpk(ctx context.Context, lfb *block.Block,
 
 	tx = httpclientutil.NewSmartContractTxn(selfNodeKey, mc.ID, selfNode.PublicKey, minersc.ADDRESS)
 	err = mc.SendSmartContractTxn(tx, data, mb.Miners.N2NURLs(), mb.Sharders.N2NURLs())
+	logging.Logger.Info("Jayash [vc] contribute mpk", zap.Any("tx", tx), zap.Any("err", err))
 	return
 }
 

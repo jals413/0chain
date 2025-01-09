@@ -308,6 +308,8 @@ func (c *Chain) SendSmartContractTxn(txn *httpclientutil.Transaction,
 	minerUrls []string,
 	sharderUrls []string) error {
 
+	logging.Logger.Info("Jayash SendSmartContractTxn", zap.Any("txn", txn), zap.Any("scData", scData), zap.Any("minerUrls", minerUrls), zap.Any("sharderUrls", sharderUrls))
+
 	// if !httpclientutil.AcquireTxnLock(time.Second) {
 	// 	return httpclientutil.ErrTxnSendBusy
 	// }
