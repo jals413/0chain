@@ -183,6 +183,24 @@ func SendPostRequest(url string, data []byte, ID string, pkey string, wg *sync.W
 
 // SendTransaction send a transaction
 func SendTransaction(txn *Transaction, urls []string, ID string, pkey string) {
+	// make sure the txn is submitted to miners themselve so that txn pool can be checked to fast invalid txns
+	if !node.Self.IsSharder() {
+		var selfInMBURLs bool
+		for _, u := range urls {
+			if u == node.Self.GetN2NURLBase() {
+				selfInMBURLs = true
+				break
+			}
+		}
+
+		if !selfInMBURLs {
+			urls = append(urls, node.Self.GetN2NURLBase())
+			logging.Logger.Debug("[mvc] miner not in mb urls, adding self to mb urls", zap.Any("urls", urls))
+		} else {
+			logging.Logger.Debug("[mvc] miner in mb urls", zap.Any("urls", urls))
+		}
+	}
+
 	for _, u := range urls {
 		txnURL := fmt.Sprintf("%v/%v", u, txnSubmitURL)
 		go func(url string) {
