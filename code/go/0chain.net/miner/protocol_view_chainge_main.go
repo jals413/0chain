@@ -25,9 +25,13 @@ import (
 // The sendDKGShare sends the generated secShare to the given node.
 func (mc *Chain) sendDKGShare(ctx context.Context, to string) (err error) {
 
+	logging.Logger.Info("Jayash_debug sendDKGShare 1")
+
 	if !mc.ChainConfig.IsDkgEnabled() {
 		return common.NewError("send_dkg_share", "dkg is not enabled")
 	}
+
+	logging.Logger.Info("Jayash_debug sendDKGShare 2")
 
 	var n = node.GetNode(to)
 
@@ -35,9 +39,13 @@ func (mc *Chain) sendDKGShare(ctx context.Context, to string) (err error) {
 		return common.NewErrorf("send_dkg_share", "node %q not found", to)
 	}
 
+	logging.Logger.Info("Jayash_debug sendDKGShare 3")
+
 	if node.Self.Underlying().GetKey() == n.ID {
 		return // don't send to itself
 	}
+
+	logging.Logger.Info("Jayash_debug sendDKGShare 4")
 
 	var (
 		params = &url.Values{}
@@ -50,10 +58,14 @@ func (mc *Chain) sendDKGShare(ctx context.Context, to string) (err error) {
 		return common.NewErrorf("send_dkg_share", "could not found sec share of node id: %s", to)
 	}
 
+	logging.Logger.Info("Jayash_debug sendDKGShare 5")
+
 	params.Add("secret_share", secShare.GetHexString())
 
 	var handler = func(ctx context.Context, entity datastore.Entity) (
 		_ interface{}, _ error) {
+
+		logging.Logger.Info("Jayash_debug handler sendDKGShare 1", zap.Any("entity", entity))
 
 		var share, ok = entity.(*bls.DKGKeyShare)
 		if !ok {
@@ -61,14 +73,20 @@ func (mc *Chain) sendDKGShare(ctx context.Context, to string) (err error) {
 			return
 		}
 
+		logging.Logger.Info("Jayash_debug handler sendDKGShare 2", zap.Any("share", share))
+
 		if share.Message == "" || share.Sign == "" {
 			return // do nothing
 		}
+
+		logging.Logger.Info("Jayash_debug handler sendDKGShare 3")
 
 		var signatureScheme = chain.GetServerChain().GetSignatureScheme()
 		if err := signatureScheme.SetPublicKey(n.PublicKey); err != nil {
 			return nil, err
 		}
+
+		logging.Logger.Info("Jayash_debug handler sendDKGShare 4")
 
 		var err error
 		ok, err = signatureScheme.Verify(share.Sign, share.Message)
@@ -78,6 +96,9 @@ func (mc *Chain) sendDKGShare(ctx context.Context, to string) (err error) {
 				zap.String("message", share.Message), zap.String("sign", share.Sign))
 			return
 		}
+
+		logging.Logger.Info("Jayash_debug handler sendDKGShare 5")
+
 		// share.ID = nodeID.GetHexString()
 		// share.Share = secShare.GetHexString()
 		shareOrSignSuccess[n.ID] = share
@@ -85,16 +106,22 @@ func (mc *Chain) sendDKGShare(ctx context.Context, to string) (err error) {
 		return
 	}
 
+	logging.Logger.Info("Jayash_debug sendDKGShare 6")
+
 	if !n.RequestEntityFromNode(ctx, DKGShareSender, params, handler) {
 		return common.NewError("send_dkg_share", "send message failed")
 	}
+
+	logging.Logger.Info("Jayash_debug sendDKGShare 7")
 
 	if len(shareOrSignSuccess) == 0 {
 		return common.NewError("send_dkg_share", "miner returned error")
 	}
 
+	logging.Logger.Info("Jayash_debug sendDKGShare 8")
+
 	mc.setSecretShares(shareOrSignSuccess)
-	logging.Logger.Debug("[mvc] sed dkg share", zap.Any("shareOrSignSuccess", shareOrSignSuccess))
+	logging.Logger.Debug("Jayash_debug [mvc] sed dkg share", zap.Any("shareOrSignSuccess", shareOrSignSuccess))
 	return
 }
 
@@ -105,6 +132,9 @@ func (mc *Chain) sendDKGShare(ctx context.Context, to string) (err error) {
 func (mc *Chain) PublishShareOrSigns(ctx context.Context, lfb *block.Block,
 	mb *block.MagicBlock) (tx *httpclientutil.Transaction,
 	err error) {
+
+	logging.Logger.Info("Jayash_debug PublishShareOrSigns 1")
+
 	if mc.isSyncingBlocks() {
 		logging.Logger.Debug("[mvc] sendsijs, block is syncing")
 		return nil, nil
@@ -265,10 +295,14 @@ func (mc *Chain) SendSijs(ctx context.Context, lfb *block.Block,
 	mb *block.MagicBlock) (tx *httpclientutil.Transaction,
 	err error) {
 
+	logging.Logger.Info("Jayash_debug SendSijs 1")
+
 	if mc.isSyncingBlocks() {
 		logging.Logger.Debug("[mvc] sendsijs, block is syncing")
 		return nil, nil
 	}
+
+	logging.Logger.Info("Jayash_debug SendSijs 2")
 
 	var (
 		sendFail []string
@@ -280,11 +314,15 @@ func (mc *Chain) SendSijs(ctx context.Context, lfb *block.Block,
 		return
 	}
 
+	logging.Logger.Info("Jayash_debug SendSijs 3")
+
 	for _, key := range sendTo {
 		if err := mc.sendDKGShare(ctx, key); err != nil {
 			sendFail = append(sendFail, fmt.Sprintf("%s(%v);", key, err))
 		}
 	}
+
+	logging.Logger.Info("Jayash_debug SendSijs 4")
 
 	totalSentNum := len(sendTo)
 	failNum := len(sendFail)
