@@ -183,6 +183,24 @@ func SendPostRequest(url string, data []byte, ID string, pkey string, wg *sync.W
 
 // SendTransaction send a transaction
 func SendTransaction(txn *Transaction, urls []string, ID string, pkey string) {
+	// make sure the txn is submitted to miners themselve so that txn pool can be checked to fast invalid txns
+	if !node.Self.IsSharder() {
+		var selfInMBURLs bool
+		for _, u := range urls {
+			if u == node.Self.GetN2NURLBase() {
+				selfInMBURLs = true
+				break
+			}
+		}
+
+		if !selfInMBURLs {
+			urls = append(urls, node.Self.GetN2NURLBase())
+			logging.Logger.Debug("[mvc] miner not in mb urls, adding self to mb urls", zap.Any("urls", urls))
+		} else {
+			logging.Logger.Debug("[mvc] miner in mb urls", zap.Any("urls", urls))
+		}
+	}
+
 	for _, u := range urls {
 		txnURL := fmt.Sprintf("%v/%v", u, txnSubmitURL)
 		go func(url string) {
@@ -862,20 +880,22 @@ func syncClientNonce(sharders []string) (int64, error) {
 }
 
 func SendSmartContractTxn(txn *Transaction, minerUrls []string, sharderUrls []string) error {
-	nonce, err := syncClientNonce(sharderUrls)
-	if err != nil {
-		logging.Logger.Error("[mvc] nonce can't get nonce from remote", zap.Error(err))
+	if txn.Nonce == 0 {
+		nonce, err := syncClientNonce(sharderUrls)
+		if err != nil {
+			logging.Logger.Error("[mvc] nonce can't get nonce from remote", zap.Error(err))
+		}
+		node.Self.SetNonce(nonce)
+		nextNonce := node.Self.GetNextNonce()
+		txn.Nonce = nextNonce
+		logging.Logger.Debug("[mvc] nonce, sync in send smart txn", zap.Int64("nonce", nextNonce))
 	}
-	node.Self.SetNonce(nonce)
-	nextNonce := node.Self.GetNextNonce()
-	txn.Nonce = nextNonce
-	logging.Logger.Debug("[mvc] nonce, sync in send smart txn", zap.Int64("nonce", nextNonce))
 
 	signer := func(hash string) (string, error) {
 		return node.Self.Sign(hash)
 	}
 
-	err = txn.ComputeHashAndSign(signer)
+	err := txn.ComputeHashAndSign(signer)
 	if err != nil {
 		logging.Logger.Error("Signing Failed during registering miner to the mining network", zap.Error(err))
 		return err
