@@ -388,7 +388,7 @@ func filterOutInvalidRegisterMiners(balances cstate.StateContextI,
 		}
 	}
 
-	logging.Logger.Info("Jayash_debug filterOutInvalidRegisterMiners", zap.Any("dkgMiners", dkgMiners), zap.Any("validMiners", validMinerIDs))
+	logging.Logger.Info("Jayash_debug filterOutInvalidRegisterMiners", zap.Any("dkgMiners", dkgMiners), zap.Any("toAddMinerIDs", toAddMinerIDs))
 
 	if len(toAddMinerIDs) != len(regIDs) {
 		logging.Logger.Info("Jayash updateRegisterNodes", zap.Any("toAddMinerIDs", toAddMinerIDs))
