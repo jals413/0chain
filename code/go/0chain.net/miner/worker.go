@@ -257,6 +257,7 @@ func (mc *Chain) MinerHealthCheck(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
+			continue
 			selfNode := node.Self.Underlying()
 			txn := httpclientutil.NewSmartContractTxn(selfNode.GetKey(), mc.ID, selfNode.PublicKey, minersc.ADDRESS)
 			scData := &httpclientutil.SmartContractTxnData{}

@@ -303,10 +303,14 @@ func incTxnSendCount(num int64) {
 	logging.Logger.Debug("[mvc] current send txn count", zap.Int64("count", cout))
 }
 
+var txnMutex sync.Mutex
+
 func (c *Chain) SendSmartContractTxn(txn *httpclientutil.Transaction,
 	scData *httpclientutil.SmartContractTxnData,
 	minerUrls []string,
 	sharderUrls []string) error {
+	txnMutex.Lock()
+	defer txnMutex.Unlock()
 
 	logging.Logger.Info("Jayash SendSmartContractTxn", zap.Any("txn", txn), zap.Any("scData", scData), zap.Any("minerUrls", minerUrls), zap.Any("sharderUrls", sharderUrls))
 
@@ -349,7 +353,14 @@ func (c *Chain) SendSmartContractTxn(txn *httpclientutil.Transaction,
 	logging.Logger.Debug("[mvc] nonce, send txn with nonce", zap.Int64("nonce", nextNonce))
 	txn.Nonce = nextNonce
 
-	return httpclientutil.SendSmartContractTxn(txn, minerUrls, sharderUrls)
+	res := httpclientutil.SendSmartContractTxn(txn, minerUrls, sharderUrls)
+
+	for !c.ConfirmTransaction(context.Background(), txn, 300) {
+		logging.Logger.Debug("[mvc] retrying txn", zap.String("txn", txn.Hash))
+		res = httpclientutil.SendSmartContractTxn(txn, minerUrls, sharderUrls)
+	}
+
+	return res
 }
 
 func (c *Chain) GetCurrentSelfNonce(minerId datastore.Key, bState util.MerklePatriciaTrieI) (int64, error) {
