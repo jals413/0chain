@@ -338,6 +338,10 @@ func (n *Node) GetN2NURLBase() string {
 	return fmt.Sprintf("http://%v:%v", n.N2NHost, n.Port)
 }
 
+func (n *Node) GetN2NURLBaseLocal() string {
+	return fmt.Sprintf("http://127.0.0.1:%v", n.Port)
+}
+
 /*GetStatusURL - get the end point where to ping for the status */
 func (n *Node) GetStatusURL() string {
 	return fmt.Sprintf("%v/_nh/status", n.GetN2NURLBase())
