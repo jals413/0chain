@@ -364,20 +364,14 @@ func (mc *Chain) sendSijsPrepare(ctx context.Context, lfb *block.Block, mb *bloc
 	mc.viewChangeProcess.Lock()
 	defer mc.viewChangeProcess.Unlock()
 
-	logging.Logger.Info("1Jayash_debug [mvc] sendSijsPrepare", zap.Int64("lfb_round", lfb.Round))
-
 	if !mc.viewChangeProcess.isDKGSet() {
 		return nil, common.NewError("dkg_not_set", "send_sijs: DKG is not set")
 	}
-
-	logging.Logger.Info("2Jayash_debug [mvc] sendSijsPrepare", zap.Int64("lfb_round", lfb.Round))
 
 	var dkgMiners *minersc.DKGMinerNodes
 	if dkgMiners, err = mc.getDKGMiners(ctx, lfb, mb); err != nil {
 		return // error
 	}
-
-	logging.Logger.Info("3Jayash_debug [mvc] sendSijsPrepare", zap.Int64("lfb_round", lfb.Round))
 
 	var selfNodeKey = node.Self.Underlying().GetKey()
 	if _, ok := dkgMiners.SimpleNodes[selfNodeKey]; !mc.isDKGSet() || !ok {
@@ -386,14 +380,10 @@ func (mc *Chain) sendSijsPrepare(ctx context.Context, lfb *block.Block, mb *bloc
 		return // (nil, nil)
 	}
 
-	logging.Logger.Info("4Jayash_debug [mvc] sendSijsPrepare", zap.Int64("lfb_round", lfb.Round))
-
 	if err = mc.createSijs(ctx, lfb, mb); err != nil {
 		logging.Logger.Error("[mvc] failed to create sijs", zap.Error(err))
 		return // error
 	}
-
-	logging.Logger.Info("5Jayash_debug [mvc] sendSijsPrepare", zap.Int64("lfb_round", lfb.Round))
 
 	// we haven't to make sure all nodes are registered, because the
 	// createSijs registers them; and after a restart ('deregister')
@@ -407,8 +397,6 @@ func (mc *Chain) sendSijsPrepare(ctx context.Context, lfb *block.Block, mb *bloc
 			sendTo = append(sendTo, key)
 		}
 	}
-
-	logging.Logger.Info("6Jayash_debug [mvc] sendSijsPrepare", zap.Int64("lfb_round", lfb.Round))
 
 	return
 }
