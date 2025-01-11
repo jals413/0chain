@@ -193,7 +193,7 @@ func (mc *Chain) DKGProcess(ctx context.Context) {
 			retrySharePhase = true
 		}
 
-		if txn == nil || mc.ConfirmTransaction(ctx, txn, 450) {
+		if txn == nil || mc.ConfirmTransaction(ctx, txn, 30) {
 			hadTxnAndConfirmed = true
 			prevPhase := mc.CurrentPhase()
 			mc.SetCurrentPhase(pn.Phase)
