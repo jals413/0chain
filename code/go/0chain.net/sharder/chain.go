@@ -633,6 +633,8 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 		return nil
 	}
 
+	lfmb := sc.GetLatestFinalizedMagicBlock(ctx)
+
 	logging.Logger.Debug("load_lfb - load from event db",
 		zap.Int64("round", lfbRound),
 		zap.String("block", lfbHash))
@@ -649,19 +651,22 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 		logging.Logger.Debug("load_lfb - load from stateDB",
 			zap.Int64("round", lfbr.Round),
 			zap.String("block", lfbr.Hash))
-		// load and set up latest magic block
-		mbs := sc.LoadLatestMBs(ctx, lfbr.MagicBlockNumber)
-		if len(mbs) == 0 {
-			logging.Logger.Error("load_lfb - could not load latest magic block")
-			return common.NewError("load_lfb", "could not see any latest magic block in local store")
-		}
 
-		for i := len(mbs) - 1; i >= 0; i-- {
-			sc.SetMagicBlock(mbs[i].MagicBlock)
-		}
+		if lfmb.Round != 0 {
+			// load and set up latest magic block
+			mbs := sc.LoadLatestMBs(ctx, lfbr.MagicBlockNumber)
+			if len(mbs) == 0 {
+				logging.Logger.Error("load_lfb - could not load latest magic block")
+				return common.NewError("load_lfb", "could not see any latest magic block in local store")
+			}
 
-		sc.UpdateMagicBlock(mbs[0].MagicBlock)
-		sc.SetLatestFinalizedMagicBlock(mbs[0])
+			for i := len(mbs) - 1; i >= 0; i-- {
+				sc.SetMagicBlock(mbs[i].MagicBlock)
+			}
+
+			sc.UpdateMagicBlock(mbs[0].MagicBlock)
+			sc.SetLatestFinalizedMagicBlock(mbs[0])
+		}
 
 		if lfbr.Round <= lfbRound {
 			// use LFB from state DB when:
