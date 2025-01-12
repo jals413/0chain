@@ -944,7 +944,7 @@ func (c *Chain) GetLatestMagicBlock() *block.MagicBlock {
 	if entity == nil {
 		logging.Logger.Panic("failed to get magic block from mb storage")
 	}
-	return entity.(*block.MagicBlock).Clone()
+	return entity.(*block.MagicBlock)
 }
 
 func (c *Chain) GetMagicBlock(round int64) *block.MagicBlock {
@@ -964,7 +964,13 @@ func (c *Chain) GetMagicBlock(round int64) *block.MagicBlock {
 		logging.Logger.Panic("failed to get magic block from mb storage")
 	}
 	c.mbMutex.RUnlock()
-	mb := entity.(*block.MagicBlock).Clone()
+	mb := entity.(*block.MagicBlock)
+	// logging.Logger.Debug("[mvc] GetMagicBlock",
+	// 	zap.Int64("round", round),
+	// 	zap.Int64("mb_starting_round", mb.StartingRound),
+	// 	zap.String("mb_hash", mb.Hash),
+	// 	zap.Int("mb_miners_size", mb.Miners.Size()),
+	// 	zap.Int("mb_sharders_size", mb.Sharders.Size()))
 	return mb
 }
 
@@ -979,7 +985,7 @@ func (c *Chain) GetMagicBlockNoOffset(round int64) *block.MagicBlock {
 	if entity == nil {
 		logging.Logger.Panic("failed to get magic block from mb storage")
 	}
-	return entity.(*block.MagicBlock).Clone()
+	return entity.(*block.MagicBlock)
 }
 
 func (c *Chain) GetPrevMagicBlock(r int64) *block.MagicBlock {
@@ -995,9 +1001,9 @@ func (c *Chain) GetPrevMagicBlock(r int64) *block.MagicBlock {
 	prevRoundVC := c.MagicBlockStorage.GetRound(indexMB - 1)
 	entity := c.MagicBlockStorage.Get(prevRoundVC)
 	if entity != nil {
-		return entity.(*block.MagicBlock).Clone()
+		return entity.(*block.MagicBlock)
 	}
-	return c.PreviousMagicBlock.Clone()
+	return c.PreviousMagicBlock
 }
 
 func (c *Chain) GetPrevMagicBlockFromMB(mb *block.MagicBlock) (
@@ -2414,7 +2420,7 @@ func (c *Chain) UpdateMagicBlock(newMagicBlock *block.MagicBlock) error {
 			logging.Logger.Info("update magic block -- hashes match ",
 				zap.String("LFMB previous MB hash", lfmb.PreviousMagicBlockHash),
 				zap.String("new MB previous MB hash", newMagicBlock.PreviousMagicBlockHash))
-			c.PreviousMagicBlock = lfmb.MagicBlock.Clone()
+			c.PreviousMagicBlock = lfmb.MagicBlock
 		}
 	}
 
