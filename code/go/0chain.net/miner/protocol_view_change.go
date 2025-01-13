@@ -25,7 +25,6 @@ import (
 	"github.com/0chain/common/core/logging"
 
 	"0chain.net/smartcontract/minersc"
-	"github.com/0chain/common/core/util"
 
 	hbls "github.com/herumi/bls-go-binary/bls"
 
@@ -612,66 +611,48 @@ func ReadDKGSummaryFile(path string) (dkgs *bls.DKGSummary, err error) {
 // Latest MB from store
 //
 
-func LoadLatestMB(ctx context.Context, lfbRound, mbNumber int64) (mb *block.MagicBlock, err error) {
-	if mbNumber > 0 {
-		mbStr := strconv.FormatInt(mbNumber, 10)
-		mb, err = LoadMagicBlock(ctx, mbStr)
-		if err != nil {
-			logging.Logger.Error("load_latest_mb", zap.Error(err), zap.Int64("mb number", mbNumber))
-			return
-		}
-		logging.Logger.Info("[mvc] find latest MB by magic bock number", zap.Int64("mb number", mbNumber))
-		return mb, nil
-	}
+// func LoadLatestMB(ctx context.Context, lfbRound, mbNumber int64) (mb *block.MagicBlock, err error) {
+// 	if mbNumber > 0 {
+// 		mbStr := strconv.FormatInt(mbNumber, 10)
+// 		mb, err = LoadMagicBlock(ctx, mbStr)
+// 		if err != nil {
+// 			logging.Logger.Error("load_latest_mb", zap.Error(err), zap.Int64("mb number", mbNumber))
+// 			return
+// 		}
+// 		logging.Logger.Info("[mvc] find latest MB by magic bock number", zap.Int64("mb number", mbNumber))
+// 		return mb, nil
+// 	}
 
-	var (
-		mbemd = datastore.GetEntityMetadata("magicblockdata")
-		rctx  = ememorystore.WithEntityConnection(ctx, mbemd)
-		conn  = ememorystore.GetEntityCon(rctx, mbemd)
-	)
-	defer ememorystore.Close(rctx)
+// 	var (
+// 		mbemd = datastore.GetEntityMetadata("magicblockdata")
+// 		rctx  = ememorystore.WithEntityConnection(ctx, mbemd)
+// 		conn  = ememorystore.GetEntityCon(rctx, mbemd)
+// 	)
+// 	defer ememorystore.Close(rctx)
 
-	iter := conn.Conn.NewIterator(conn.ReadOptions)
-	defer iter.Close()
-	// the first time the hardfork is happened
-	var data = mbemd.Instance().(*block.MagicBlockData)
-	iter.SeekToLast() // from last
+// 	iter := conn.Conn.NewIterator(conn.ReadOptions)
+// 	defer iter.Close()
+// 	// the first time the hardfork is happened
+// 	var data = mbemd.Instance().(*block.MagicBlockData)
+// 	iter.SeekToLast() // from last
 
-	if !iter.Valid() {
-		return nil, util.ErrValueNotPresent
-	}
+// 	if !iter.Valid() {
+// 		return nil, util.ErrValueNotPresent
+// 	}
 
-	if err = datastore.FromJSON(iter.Value().Data(), data); err != nil {
-		return nil, common.NewErrorf("load_latest_mb",
-			"decoding error: %v, key: %q", err, string(iter.Key().Data()))
-	}
+// 	if err = datastore.FromJSON(iter.Value().Data(), data); err != nil {
+// 		return nil, common.NewErrorf("load_latest_mb",
+// 			"decoding error: %v, key: %q", err, string(iter.Key().Data()))
+// 	}
 
-	mb = data.MagicBlock
-	logging.Logger.Info("[mvc] seek to the last in MB store", zap.Int64("mb number", mb.MagicBlockNumber))
-	return
-}
+// 	mb = data.MagicBlock
+// 	logging.Logger.Info("[mvc] seek to the last in MB store", zap.Int64("mb number", mb.MagicBlockNumber))
+// 	return
+// }
 
 //
 // Setup miner (initialization).
 //
-
-func (mc *Chain) updateMagicBlocks(mbs ...*block.Block) {
-	for _, mb := range mbs {
-		if mb == nil {
-			continue
-		}
-		if err := mc.UpdateMagicBlock(mb.MagicBlock); err == nil {
-			mc.SetLatestFinalizedMagicBlock(mb)
-		} else {
-			logging.Logger.Error("update magic block failed",
-				zap.Error(err),
-				zap.Int64("mb number", mb.MagicBlockNumber),
-				zap.Int64("mb sr", mb.StartingRound),
-				zap.String("mb hash", mb.Hash),
-			)
-		}
-	}
-}
 
 // SetupLatestAndPreviousMagicBlocks used to be sure miner has latest and
 // previous MB and corresponding DKG. The previous MB can be useless in
@@ -692,7 +673,7 @@ func (mc *Chain) SetupLatestAndPreviousMagicBlocks(ctx context.Context) {
 	}
 
 	if lfmb.MagicBlockNumber <= 1 {
-		mc.updateMagicBlocks(lfmb)
+		mc.UpdateMagicBlocks(lfmb)
 		return // no previous MB is expected
 	}
 
@@ -706,7 +687,7 @@ func (mc *Chain) SetupLatestAndPreviousMagicBlocks(ctx context.Context) {
 		if err := mc.SetDKGSFromStore(ctx, lfmb.MagicBlock); err != nil {
 			logging.Logger.Warn("set dkgs from store failed", zap.Error(err))
 		}
-		mc.updateMagicBlocks(pfmb, lfmb)
+		mc.UpdateMagicBlocks(pfmb, lfmb)
 		return
 	}
 
@@ -718,7 +699,7 @@ func (mc *Chain) SetupLatestAndPreviousMagicBlocks(ctx context.Context) {
 			logging.Logger.Warn("set dkgs from store failed", zap.Error(err))
 		}
 
-		mc.updateMagicBlocks(pfmb, lfmb)
+		mc.UpdateMagicBlocks(pfmb, lfmb)
 		return
 	}
 
@@ -746,7 +727,7 @@ func (mc *Chain) SetupLatestAndPreviousMagicBlocks(ctx context.Context) {
 	if err := mc.SetDKGSFromStore(ctx, pfmb.MagicBlock); err != nil {
 		logging.Logger.Warn("set dkgs from store", zap.Error(err))
 	}
-	mc.updateMagicBlocks(pfmb, lfmb) // ok
+	mc.UpdateMagicBlocks(pfmb, lfmb) // ok
 }
 
 func SignShareRequestHandler(ctx context.Context, r *http.Request) (

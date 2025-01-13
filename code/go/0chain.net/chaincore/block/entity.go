@@ -264,7 +264,7 @@ func (b *Block) Validate(_ context.Context) error {
 	}
 	miner := node.GetNode(b.MinerID)
 	if miner == nil {
-		return common.NewError("unknown_miner", "Do not know this miner")
+		return common.NewError("unknown_miner", "Do not know this miner : "+b.MinerID)
 	}
 
 	b.mutexTxns.RLock()

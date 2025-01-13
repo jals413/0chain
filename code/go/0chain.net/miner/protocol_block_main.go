@@ -53,6 +53,14 @@ func (mc *Chain) UpdateFinalizedBlock(ctx context.Context, b *block.Block) error
 		return err
 	}
 
+	nodeLists, err := mc.GetRegisterNodesList(b)
+	if err != nil {
+		logging.Logger.Debug("update finalized block - get node lists failed", zap.Error(err))
+	} else {
+		// update the register node list cache
+		node.UpdateVCAddNodesCache(nodeLists)
+	}
+
 	pn, err := mc.GetPhaseOfBlock(b)
 	if err != nil && err != util.ErrValueNotPresent {
 		logging.Logger.Error("update finalized block - get phase of block failed", zap.Error(err))

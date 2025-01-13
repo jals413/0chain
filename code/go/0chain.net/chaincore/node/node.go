@@ -10,18 +10,18 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/rcrowley/go-metrics"
-
 	"0chain.net/chaincore/client"
 	"0chain.net/core/common"
 	"0chain.net/core/encryption"
 	"0chain.net/core/viper"
+	"github.com/rcrowley/go-metrics"
 )
 
 //go:generate msgp -io=false -tests=false -v
 
 var nodes = make(map[string]*Node)
 var nodesMutex = &sync.RWMutex{}
+var vcAddNodesList = NewVCAddNodesList()
 
 /*RegisterNode - register a node to a global registry
 * We need to keep track of a global register of nodes. This is required to ensure we can verify a signed request
@@ -31,6 +31,16 @@ func RegisterNode(node *Node) {
 	nodesMutex.Lock()
 	defer nodesMutex.Unlock()
 	nodes[node.GetKey()] = node
+}
+
+// RegisterNodes replaces the existing nodes with the new nodes.
+func RegisterNodes(mbNodes []*Node) {
+	nodesMutex.Lock()
+	defer nodesMutex.Unlock()
+	nodes = make(map[string]*Node, len(nodes))
+	for _, n := range mbNodes {
+		nodes[n.GetKey()] = n
+	}
 }
 
 // CopyNodes returns copy of all registered nodes.
@@ -44,6 +54,10 @@ func CopyNodes() (cp map[string]*Node) {
 	}
 
 	return
+}
+
+func UpdateVCAddNodesCache(nodes []string) {
+	vcAddNodesList.ReplaceAll(nodes)
 }
 
 func GetMinerNodesKeys() []string {
@@ -148,18 +162,18 @@ func Provider() *Node {
 	return node
 }
 
-func Setup(node *Node) error {
+func Setup(n *Node) error {
 	// queue up at most these many messages to a node
 	// because of this, we don't want the status monitoring to use this communication layer
-	node.mutex.Lock()
-	node.setupCommChannel()
-	node.TimersByURI = make(map[string]metrics.Timer, 10)
-	node.SizeByURI = make(map[string]metrics.Histogram, 10)
-	node.mutex.Unlock()
-	if err := node.ComputeProperties(); err != nil {
+	n.mutex.Lock()
+	n.setupCommChannel()
+	n.TimersByURI = make(map[string]metrics.Timer, 10)
+	n.SizeByURI = make(map[string]metrics.Histogram, 10)
+	n.mutex.Unlock()
+	if err := n.ComputeProperties(); err != nil {
 		return err
 	}
-	Self.SetNodeIfPublicKeyIsEqual(node)
+	Self.SetNodeIfPublicKeyIsEqual(n)
 	return nil
 }
 
@@ -322,6 +336,10 @@ func (n *Node) GetURLBase() string {
 /*GetN2NURLBase - get the end point base for n2n communication */
 func (n *Node) GetN2NURLBase() string {
 	return fmt.Sprintf("http://%v:%v", n.N2NHost, n.Port)
+}
+
+func (n *Node) GetN2NURLBaseLocal() string {
+	return fmt.Sprintf("http://127.0.0.1:%v", n.Port)
 }
 
 /*GetStatusURL - get the end point where to ping for the status */
@@ -627,7 +645,14 @@ func (n *Node) SetNode(old *Node) {
 	if clone.ProtocolStats != nil {
 		n.ProtocolStats = clone.ProtocolStats.(interface{ Clone() interface{} }).Clone()
 	}
+
+	// Don't override build tag if it's set
+	buildTag := n.Info.BuildTag
 	n.Info = clone.Info
+	if buildTag != "" {
+		n.Info.BuildTag = buildTag
+	}
+
 	n.Status = clone.Status
 }
 
@@ -669,6 +694,7 @@ func (n *Node) Clone() *Node {
 		LargeMessagePullServeTime: n.LargeMessagePullServeTime,
 		SmallMessagePullServeTime: n.SmallMessagePullServeTime,
 		CommChannel:               make(chan struct{}, 15),
+		Info:                      n.Info,
 	}
 
 	clone.Client.Copy(&n.Client)

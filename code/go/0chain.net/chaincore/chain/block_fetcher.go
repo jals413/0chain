@@ -525,7 +525,7 @@ func (c *Chain) validateBlock(ctx context.Context, b *block.Block) (*block.Block
 	return b, nil
 }
 
-// getNotarizedBlockFromMiners - get a notarized block for a round from
+// GetNotarizedBlockFromMiners getNotarizedBlockFromMiners - get a notarized block for a round from
 // miners. It verifies and validates block. But it never creates corresponding
 // Chain round, never adds the block to the round, never adds block to the
 // Chain, and never calls NotarizedBlockFetched that should be done after if

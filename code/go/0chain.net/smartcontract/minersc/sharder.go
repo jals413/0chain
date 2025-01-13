@@ -94,10 +94,35 @@ func (msc *MinerSmartContract) AddSharder(
 	}
 
 	magicBlockSharders := balances.GetChainCurrentMagicBlock().Sharders
-	if !magicBlockSharders.HasNode(newSharder.ID) {
-		logging.Logger.Error("add_sharder: Error in Adding a new sharder: Not in magic block", zap.String("SharderID", newSharder.ID))
-		return "", common.NewErrorf("add_sharder",
-			"failed to add new sharder: Not in magic block")
+	sharderInMB := magicBlockSharders.HasNode(newSharder.ID)
+	if err := cstate.WithActivation(balances, "hermes", func() error {
+		if !sharderInMB {
+			logging.Logger.Error("add_sharder: Error in Adding a new sharder: Not in magic block", zap.String("SharderID", newSharder.ID))
+			return common.NewErrorf("add_sharder", "failed to add new sharder: Not in magic block")
+		}
+
+		return nil
+	}, func() error {
+		if sharderInMB {
+			return nil
+		}
+
+		// check if the sharder is in the register node list
+		regIDs, err := getRegisterNodes(balances, spenum.Sharder)
+		if err != nil {
+			return common.NewErrorf("add_sharder", "failed to get register node list: %v", err)
+		}
+
+		for _, regID := range regIDs {
+			if regID == newSharder.ID {
+				// in the register node list, so allow to add the sharder
+				return nil
+			}
+		}
+
+		return common.NewErrorf("add_sharder", "sharder is neither in the MB nor in the register node list")
+	}); err != nil {
+		return "", err
 	}
 
 	newSharder.LastHealthCheck = t.CreationDate

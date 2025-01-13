@@ -72,7 +72,7 @@ func (c *Chain) CheckOrRegister(ctx context.Context, timeout time.Duration) (boo
 
 	// TODO: start register only when in VC:start phase
 
-	logging.Logger.Debug("CheckOrRegister - gequest to register node")
+	logging.Logger.Debug("CheckOrRegister - request to register node")
 	txn, err := c.RegisterNode()
 	if err != nil {
 		logging.Logger.Error("CheckOrRegister - failed to register node in SC -- init_setup_sc",
