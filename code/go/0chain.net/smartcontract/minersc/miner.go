@@ -50,12 +50,17 @@ func getRegisterNodes(balances cstate.StateContextI, nodeType spenum.Provider) (
 		return nil, fmt.Errorf("invalid node type: %s", nodeType)
 	}
 
-	deleteMinersIDs, err := getNodeIDs(balances, rKey)
+	registerNodeIDs, err := getNodeIDs(balances, rKey)
 	if err != nil {
 		return nil, err
 	}
 
-	return deleteMinersIDs, nil
+	return registerNodeIDs, nil
+}
+
+func GetRegisterNodeKey(nodeType spenum.Provider) (datastore.Key, bool) {
+	k, ok := registerNodeKeyMap[nodeType]
+	return k, ok
 }
 
 func updateRegisterNodes(balances cstate.StateContextI, nodeType spenum.Provider, ids NodeIDs) error {
@@ -172,9 +177,8 @@ func (msc *MinerSmartContract) AddMiner(t *transaction.Transaction,
 	defer lockAllMiners.Unlock()
 
 	newMiner.Settings.MinStake = gn.MustBase().MinStakePerDelegate
-
+	magicBlockMiners := balances.GetChainCurrentMagicBlock().Miners
 	if err := cstate.WithActivation(balances, "hermes", func() error {
-		magicBlockMiners := balances.GetChainCurrentMagicBlock().Miners
 		if magicBlockMiners == nil {
 			return common.NewError("add_miner", "magic block miners nil")
 		}
@@ -185,7 +189,23 @@ func (msc *MinerSmartContract) AddMiner(t *transaction.Transaction,
 		}
 		return nil
 	}, func() error {
-		return nil
+		if magicBlockMiners.HasNode(newMiner.ID) {
+			return nil
+		}
+
+		// check if the miner is in the register node list
+		regIDs, err := getRegisterNodes(balances, spenum.Miner)
+		if err != nil {
+			return common.NewErrorf("add_miner", "failed to get register node list: %v", err)
+		}
+		for _, regID := range regIDs {
+			if regID == newMiner.ID {
+				// in the register node list, so allow to add the miner
+				return nil
+			}
+		}
+
+		return common.NewErrorf("add_miner", "failed to add new miner: Not in magic block")
 	}); err != nil {
 		return "", err
 	}
@@ -325,33 +345,18 @@ func (msc *MinerSmartContract) deleteNode(
 	deleteNode *MinerNode,
 	balances cstate.StateContextI,
 ) (*MinerNode, error) {
-	// check if the node is in MB
-	mb := gn.prevMagicBlock(balances)
-
 	var (
-		err  error
-		inMB bool
+		err error
 	)
 	// deleteNode.Delete = true
 	var nodeType spenum.Provider
 	switch deleteNode.NodeType {
 	case NodeTypeMiner:
 		nodeType = spenum.Miner
-		inMB = mb.Miners.HasNode(deleteNode.ID)
 	case NodeTypeSharder:
 		nodeType = spenum.Sharder
-		inMB = mb.Sharders.HasNode(deleteNode.ID)
 	default:
 		return nil, fmt.Errorf("unrecognised node type: %v", deleteNode.NodeType.String())
-	}
-
-	if !inMB {
-		logging.Logger.Debug("delete node failed, node is not in MB",
-			zap.String("id", deleteNode.ID),
-			zap.Int64("mb_sr", mb.StartingRound),
-			zap.Int64("mb_num", mb.MagicBlockNumber),
-			zap.String("mb_hash", mb.Hash))
-		return nil, common.NewError("delete_node", "node is not in MB")
 	}
 
 	logging.Logger.Debug("delete node",
@@ -364,13 +369,16 @@ func (msc *MinerSmartContract) deleteNode(
 		return nil, err
 	}
 
-	for _, rid := range rids {
+	for idx, rid := range rids {
 		if rid == deleteNode.ID {
-			logging.Logger.Error("delete node failed, node is in register list",
-				zap.String("node type", nodeType.String()),
-				zap.String("id", deleteNode.ID))
-			return nil, common.NewError("delete_node", "node is in register list")
+			// delete from register list
+			rids = append(rids[:idx], rids[idx+1:]...)
+			break
 		}
+	}
+
+	if err = updateRegisterNodes(balances, nodeType, rids); err != nil {
+		return nil, err
 	}
 
 	err = saveDeleteNodeID(balances, nodeType, deleteNode.ID)

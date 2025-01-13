@@ -1618,14 +1618,13 @@ func StartProtocol(ctx context.Context, gb *block.Block) {
 		mr *Round
 	)
 
+	mc.LoadLatestFinalizedMagicBlockFromStore(ctx)
+	mc.BumpLFBTicket(ctx)
+
 	if err := mc.LoadLatestBlocksFromStore(ctx); err != nil {
 		logging.Logger.Error(fmt.Sprintf("can't load latest blocks from store, err: %v", err))
 		// return
 	}
-
-	mc.loadLatestFinalizedMagicBlockFromStore(ctx)
-
-	mc.BumpLFBTicket(ctx)
 
 	lfb := mc.GetLatestFinalizedBlock()
 	if lfb != nil {
@@ -1670,7 +1669,7 @@ func (mc *Chain) LoadMagicBlocksAndDKG(ctx context.Context) {
 		zap.String("block", lfbr.Hash),
 		zap.Int64("mb_round", lfbr.MagicBlockNumber))
 
-	current, err = LoadLatestMB(ctx, lfbr.Round, lfbr.MagicBlockNumber)
+	current, err = block.LoadLatestMB(ctx, lfbr.Round, lfbr.MagicBlockNumber)
 	if err != nil {
 		logging.Logger.Error("load_mbs_and_dkg -- loading the latest MB",
 			zap.Error(err))

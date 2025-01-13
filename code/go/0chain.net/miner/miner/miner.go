@@ -146,6 +146,8 @@ func main() {
 			logging.Logger.Panic("can't read magic block from DNS", zap.Error(err))
 			return
 		}
+
+		logging.Logger.Info("read magic block from 0DNS", zap.Any("magic_block", magicBlock))
 	}
 
 	if state.Debug() {

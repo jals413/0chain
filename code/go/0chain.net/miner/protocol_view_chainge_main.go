@@ -78,6 +78,7 @@ func (mc *Chain) sendDKGShare(ctx context.Context, to string) (err error) {
 				zap.String("message", share.Message), zap.String("sign", share.Sign))
 			return
 		}
+
 		// share.ID = nodeID.GetHexString()
 		// share.Share = secShare.GetHexString()
 		shareOrSignSuccess[n.ID] = share
@@ -105,6 +106,7 @@ func (mc *Chain) sendDKGShare(ctx context.Context, to string) (err error) {
 func (mc *Chain) PublishShareOrSigns(ctx context.Context, lfb *block.Block,
 	mb *block.MagicBlock) (tx *httpclientutil.Transaction,
 	err error) {
+
 	if mc.isSyncingBlocks() {
 		logging.Logger.Debug("[mvc] sendsijs, block is syncing")
 		return nil, nil
@@ -249,6 +251,7 @@ func (mc *Chain) ContributeMpk(ctx context.Context, lfb *block.Block,
 
 	tx = httpclientutil.NewSmartContractTxn(selfNodeKey, mc.ID, selfNode.PublicKey, minersc.ADDRESS)
 	err = mc.SendSmartContractTxn(tx, data, mb.Miners.N2NURLs(), mb.Sharders.N2NURLs())
+	logging.Logger.Info("[vc] contribute mpk", zap.Any("tx", tx), zap.Any("err", err))
 	return
 }
 

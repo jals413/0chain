@@ -183,6 +183,12 @@ func SendPostRequest(url string, data []byte, ID string, pkey string, wg *sync.W
 
 // SendTransaction send a transaction
 func SendTransaction(txn *Transaction, urls []string, ID string, pkey string) {
+	// make sure the txn is submitted to miners themselve so that txn pool can be checked to fast invalid txns
+	if !node.Self.IsSharder() {
+		// include 127.0.0.1:port in urls
+		urls = append(urls, node.Self.GetN2NURLBaseLocal())
+	}
+
 	for _, u := range urls {
 		txnURL := fmt.Sprintf("%v/%v", u, txnSubmitURL)
 		go func(url string) {

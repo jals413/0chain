@@ -429,17 +429,19 @@ func (c *Chain) BlockWorker(ctx context.Context) {
 				}
 				// see no block in buffer to process
 				syncing = false
-				logging.Logger.Debug("process block, no blobber in buffer", zap.Int64("current round", cr))
+				logging.Logger.Debug("process block, no block in buffer", zap.Int64("current round", cr))
 
-				// see if the miner is in the MB, and if not, continue to sync blocks
-				mb := c.GetMagicBlock(cr)
-				if !mb.Miners.HasNode(node.Self.Underlying().GetKey()) {
-					logging.Logger.Debug("process block, miner not in the MB, continue to sync blocks",
-						zap.Int64("current round", cr),
-						zap.Int64("mb round", mb.StartingRound))
-					time.Sleep(100 * time.Millisecond)
-					syncBlocksTimer.Reset(0)
-					continue
+				if node.Self.IsMiner() {
+					// see if the miner is in the MB, and if not, continue to sync blocks
+					mb := c.GetMagicBlock(cr)
+					if !mb.Miners.HasNode(node.Self.Underlying().GetKey()) {
+						logging.Logger.Debug("process block, miner not in the MB, continue to sync blocks",
+							zap.Int64("current round", cr),
+							zap.Int64("mb round", mb.StartingRound))
+						time.Sleep(100 * time.Millisecond)
+						syncBlocksTimer.Reset(0)
+						continue
+					}
 				}
 
 				time.Sleep(100 * time.Millisecond)
@@ -962,13 +964,8 @@ func (c *Chain) GetMagicBlock(round int64) *block.MagicBlock {
 		logging.Logger.Panic("failed to get magic block from mb storage")
 	}
 	c.mbMutex.RUnlock()
+	// mb := entity.(*block.MagicBlock).Clone()
 	mb := entity.(*block.MagicBlock)
-	logging.Logger.Debug("[mvc] GetMagicBlock",
-		zap.Int64("round", round),
-		zap.Int64("mb_starting_round", mb.StartingRound),
-		zap.String("mb_hash", mb.Hash),
-		zap.Int("mb_miners_size", mb.Miners.Size()),
-		zap.Int("mb_sharders_size", mb.Sharders.Size()))
 	return mb
 }
 
@@ -1015,11 +1012,11 @@ func (c *Chain) GetPrevMagicBlockFromMB(mb *block.MagicBlock) (
 func (c *Chain) SetMagicBlock(mb *block.MagicBlock) {
 	c.mbMutex.Lock()
 	defer c.mbMutex.Unlock()
-	if err := c.MagicBlockStorage.Put(mb, mb.StartingRound); err != nil {
+	if err := c.MagicBlockStorage.Put(mb.Clone(), mb.StartingRound); err != nil {
 		logging.Logger.Error("failed to put magic block", zap.Error(err))
 	}
 
-	logging.Logger.Debug("[mvc] set magic block",
+	logging.Logger.Error("[mvc] set magic block",
 		zap.Int64("mb number", mb.MagicBlockNumber),
 		zap.Int64("mb sr", mb.StartingRound),
 		zap.String("mb hash", mb.Hash))
@@ -2399,6 +2396,9 @@ func (c *Chain) UpdateMagicBlock(newMagicBlock *block.MagicBlock) error {
 		return nil
 	}
 
+	c.InitializeMinerPool(newMagicBlock)
+	c.SetMagicBlock(newMagicBlock)
+
 	// initialize magicblock nodepools
 	if err := c.UpdateNodesFromMagicBlock(newMagicBlock); err != nil {
 		return common.NewErrorf("failed to update magic block", "%v", err)
@@ -2419,7 +2419,6 @@ func (c *Chain) UpdateMagicBlock(newMagicBlock *block.MagicBlock) error {
 		}
 	}
 
-	c.SetMagicBlock(newMagicBlock)
 	return nil
 }
 
@@ -2437,16 +2436,22 @@ func (c *Chain) UpdateNodesFromMagicBlock(newMagicBlock *block.MagicBlock) error
 }
 
 func (c *Chain) SetupNodes(mb *block.MagicBlock) error {
-	for _, mn := range mb.Miners.CopyNodesMap() {
+	mns := mb.Miners.CopyNodes()
+	for _, mn := range mns {
 		if err := node.Setup(mn); err != nil {
 			return err
 		}
 	}
-	for _, sh := range mb.Sharders.CopyNodesMap() {
+
+	shs := mb.Sharders.CopyNodes()
+
+	for _, sh := range shs {
 		if err := node.Setup(sh); err != nil {
 			return err
 		}
 	}
+
+	node.RegisterNodes(append(mns, shs...))
 
 	return nil
 }
@@ -2729,5 +2734,90 @@ func (c *Chain) BlockTicketsVerifyWithLock(ctx context.Context, blockHash string
 		return f()
 	case <-ctx.Done():
 		return ctx.Err()
+	}
+}
+
+func (c *Chain) LoadLatestFinalizedMagicBlockFromStore(ctx context.Context) {
+	lfmb := c.GetLatestMagicBlock()
+	// load the latest N magic blocks
+	n := int64(5) // TODO: read from config
+	retry := 3
+
+	if lfmb.MagicBlockNumber <= 1 {
+		return
+	}
+
+	// magic block number start from 1, the genesis block
+	startNum := int64(2) // 1 is the genesis block, we have it locally, so don't need to fetch from remote
+	if lfmb.MagicBlockNumber < startNum {
+		// genesis block, return
+		return
+	}
+
+	newStart := lfmb.MagicBlockNumber - n
+	if newStart > startNum {
+		startNum = newStart
+	}
+
+	for i := startNum; i <= lfmb.MagicBlockNumber; i++ {
+		// load MB from local store
+		mbStr := strconv.FormatInt(i, 10)
+		prevMbStr := strconv.FormatInt(i-1, 10)
+		mb, err := block.LoadMagicBlock(ctx, mbStr)
+		if err != nil {
+			logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+		}
+
+		var prevMb *block.MagicBlock
+		if i == 2 {
+			// previous magic block is the genesis block
+			prevMb = c.GetMagicBlock(1)
+		} else {
+			prevMb, err = block.LoadMagicBlock(ctx, prevMbStr)
+			if err != nil {
+				logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
+			}
+		}
+
+		// load and set prev mb if not in chain.MagicBlockStorage so that
+		// blocks fetch process can verify tickets
+		// if mc.MagicBlockStorage.GetByStartingRound(prevMb.StartingRound) == nil {
+		c.MagicBlockStorage.Put(prevMb, prevMb.StartingRound)
+		// } else {
+		// 	logging.Logger.Error("[mvc] load prev MB by magic bock number",
+		// 		zap.Int64("mb number", i),
+
+		// }
+
+		logging.Logger.Info("[mvc] load MB by magic bock number", zap.Int64("mb number", i))
+		for j := 0; j < retry; j++ {
+			bmb, err := c.GetNotarizedBlockFromSharders(ctx, "", mb.StartingRound)
+			if err != nil {
+				logging.Logger.Error("load_lfb - could not fetch latest finalized magic block from sharders",
+					zap.Int64("mb_starting_round", lfmb.StartingRound), zap.Error(err))
+				time.Sleep(3 * time.Second)
+				continue
+			}
+			c.UpdateMagicBlocks(bmb)
+			break
+		}
+	}
+}
+
+func (c *Chain) UpdateMagicBlocks(mbs ...*block.Block) {
+	for _, mb := range mbs {
+		if mb == nil {
+			continue
+		}
+		if err := c.UpdateMagicBlock(mb.MagicBlock); err == nil {
+			c.SetLatestFinalizedMagicBlock(mb)
+		} else {
+			logging.Logger.Error("update magic block failed",
+				zap.Error(err),
+				zap.Int64("mb number", mb.MagicBlockNumber),
+				zap.Int64("mb sr", mb.StartingRound),
+				zap.String("mb hash", mb.Hash),
+			)
+		}
 	}
 }

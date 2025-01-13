@@ -335,8 +335,9 @@ func (c *Chain) StartLFBTicketWorker(ctx context.Context, on *block.Block) {
 		isSharder          = node.Self.Type == node.NodeTypeSharder
 
 		// internals
-		latest = c.newLFBTicket(on)                 //
-		subs   = make(map[chan *LFBTicket]struct{}) //
+		latest          = c.newLFBTicket(on) //
+		localBumpTicket = latest
+		subs            = make(map[chan *LFBTicket]struct{}) //
 
 		// loop locals
 		ticket *LFBTicket
@@ -419,10 +420,10 @@ func (c *Chain) StartLFBTicketWorker(ctx context.Context, on *block.Block) {
 
 			b = prev // use latest, regardless order in the channel
 
-			if b.Round <= latest.Round {
-				logging.Logger.Debug("update lfb ticket - b.Round <= latest.Round",
+			if b.Round <= localBumpTicket.Round {
+				logging.Logger.Debug("update lfb ticket - b.Round <= localBumpTicket.Round",
 					zap.Int64("b.Round", b.Round),
-					zap.Int64("latest.Round", latest.Round))
+					zap.Int64("localLatestBump.Round", localBumpTicket.Round))
 				continue // not updated
 			}
 
@@ -434,8 +435,9 @@ func (c *Chain) StartLFBTicketWorker(ctx context.Context, on *block.Block) {
 			// send for all subscribers, if any
 			c.sendLFBTicketEventToSubscribers(subs, ticket)
 
-			if latest.Round < ticket.Round {
-				latest = ticket // update the latest
+			if localBumpTicket.Round < ticket.Round {
+				localBumpTicket = ticket // update the latest
+				latest = ticket
 				logging.Logger.Debug("update lfb ticket", zap.Int64("round", latest.Round))
 			}
 

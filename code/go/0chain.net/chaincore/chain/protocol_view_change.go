@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"reflect"
 	"sort"
@@ -306,6 +307,8 @@ func (c *Chain) SendSmartContractTxn(txn *httpclientutil.Transaction,
 	scData *httpclientutil.SmartContractTxnData,
 	minerUrls []string,
 	sharderUrls []string) error {
+
+	logging.Logger.Info("Jayash SendSmartContractTxn", zap.Any("txn", txn), zap.Any("scData", scData), zap.Any("minerUrls", minerUrls), zap.Any("sharderUrls", sharderUrls))
 
 	// if !httpclientutil.AcquireTxnLock(time.Second) {
 	// 	return httpclientutil.ErrTxnSendBusy
@@ -683,4 +686,30 @@ func (c *Chain) GetPhaseOfBlock(b *block.Block) (*minersc.PhaseNode, error) {
 	}
 
 	return &pn, nil
+}
+
+func (c *Chain) GetRegisterNodesList(b *block.Block) (minersc.NodeIDs, error) {
+	var mids minersc.NodeIDs
+	minerKey, ok := minersc.GetRegisterNodeKey(spenum.Miner)
+	if !ok {
+		return nil, fmt.Errorf("invalid node type: %s", spenum.Miner)
+	}
+
+	err := c.GetBlockStateNode(b, minerKey, &mids)
+	if err != nil && err != util.ErrValueNotPresent {
+		return nil, err
+	}
+
+	sharderKey, ok := minersc.GetRegisterNodeKey(spenum.Sharder)
+	if !ok {
+		return nil, fmt.Errorf("invalid node type: %s", spenum.Sharder)
+	}
+
+	var sids minersc.NodeIDs
+	err = c.GetBlockStateNode(b, sharderKey, &sids)
+	if err != nil && err != util.ErrValueNotPresent {
+		return nil, err
+	}
+
+	return append(mids, sids...), nil
 }
