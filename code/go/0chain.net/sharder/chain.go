@@ -659,14 +659,14 @@ func (sc *Chain) LoadLatestBlocksFromStore(ctx context.Context) (err error) {
 
 			sc.UpdateMagicBlock(mbs[0].MagicBlock)
 			sc.SetLatestFinalizedMagicBlock(mbs[0])
-		}
 
-		if lfbr.Round <= lfbRound {
-			// use LFB from state DB when:
-			// LFB from state DB is more old than LFB from event DB or
-			// They are in the same round
-			lfbRound = lfbr.Round
-			lfbHash = lfbr.Hash
+			if lfbr.Round <= lfbRound {
+				// use LFB from state DB when:
+				// LFB from state DB is more old than LFB from event DB or
+				// They are in the same round
+				lfbRound = lfbr.Round
+				lfbHash = lfbr.Hash
+			}
 		}
 	}
 
