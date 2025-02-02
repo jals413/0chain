@@ -553,6 +553,20 @@ func (sc *StorageSmartContract) updateBlobberSettings(txn *transaction.Transacti
 					return common.NewError("update_blobber_settings_failed",
 						"can't save related stake pool: "+err.Error())
 				}
+
+				if err = blobber.mustUpdateBase(func(b *storageNodeBase) error {
+					b.StakePoolSettings.DelegateWallet = *updatedBlobber.StakePoolSettings.DelegateWallet
+					return nil
+				}); err != nil {
+					return err
+				}
+				_, err = balances.InsertTrieNode(blobber.GetKey(), blobber)
+				if err != nil {
+					return common.NewError("update_blobber_settings_failed", "saving blobber: "+err.Error())
+				}
+				if err := emitUpdateBlobber(blobber, existingSp, balances); err != nil {
+					return fmt.Errorf("emmiting blobber %v: %v", blobber, err)
+				}
 			}
 		}
 		return nil
