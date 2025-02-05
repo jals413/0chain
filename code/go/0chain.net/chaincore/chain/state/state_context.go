@@ -34,6 +34,11 @@ import (
 type ApprovedMinter int
 
 const (
+	// old MPT max node size
+	MPTMaxAllowableNodeSize = 1024 * 1024 // 1 MB
+)
+
+const (
 	MinterMiner ApprovedMinter = iota
 	MinterStorage
 	MinterZcn
@@ -482,7 +487,19 @@ func (sc *StateContext) getNodeValue(key datastore.Key, v util.MPTSerializable) 
 }
 
 func (sc *StateContext) setNodeValue(key datastore.Key, node util.MPTSerializable) (datastore.Key, error) {
-	newKey, err := sc.state.Insert(util.Path(encryption.Hash(key)), node)
+	path := util.Path(encryption.Hash(key))
+	// before hardfork
+	{
+		v, _ := node.MarshalMsg(nil)
+		if len(v) > MPTMaxAllowableNodeSize {
+			// the error should be the same as the error returned by the common package.
+			msg := fmt.Sprintf("node exceeds maximum permissible size of %d bytes for path: %s", MPTMaxAllowableNodeSize, string(path))
+			err := common.NewError("failed to insert node", msg)
+			return "", err
+		}
+	}
+
+	newKey, err := sc.state.Insert(path, node)
 	if err != nil {
 		return "", err
 	}
