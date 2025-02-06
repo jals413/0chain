@@ -288,6 +288,19 @@ func (sc *StorageSmartContract) updateBlobber(
 						if b.StorageVersion == nil || *b.StorageVersion == 0 {
 							b.StorageVersion = updateBlobber.StorageVersion
 						}
+
+						if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
+							return nil
+						}, func() error {
+							emptyString := ""
+							if updateBlobber.ManagingWallet != "" && (b.ManagingWallet == nil || b.ManagingWallet == &emptyString) {
+								b.ManagingWallet = &updateBlobber.ManagingWallet
+							}
+							return nil
+						}); jasonActErr != nil {
+							return jasonActErr
+						}
+
 						return nil
 					})
 				}); actErr != nil {
