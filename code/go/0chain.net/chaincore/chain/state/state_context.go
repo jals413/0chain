@@ -488,15 +488,20 @@ func (sc *StateContext) getNodeValue(key datastore.Key, v util.MPTSerializable) 
 
 func (sc *StateContext) setNodeValue(key datastore.Key, node util.MPTSerializable) (datastore.Key, error) {
 	path := util.Path(encryption.Hash(key))
-	// before hardfork
-	{
+
+	if actErr := WithActivation(sc, "jason", func() error {
 		v, _ := node.MarshalMsg(nil)
 		if len(v) > MPTMaxAllowableNodeSize {
 			// the error should be the same as the error returned by the common package.
 			msg := fmt.Sprintf("node exceeds maximum permissible size of %d bytes for path: %s", MPTMaxAllowableNodeSize, string(path))
 			err := common.NewError("failed to insert node", msg)
-			return "", err
+			return err
 		}
+		return nil
+	}, func() error {
+		return nil
+	}); actErr != nil {
+		return "", actErr
 	}
 
 	newKey, err := sc.state.Insert(path, node)
