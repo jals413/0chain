@@ -292,8 +292,7 @@ func (sc *StorageSmartContract) updateBlobber(
 						if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
 							return nil
 						}, func() error {
-							emptyString := ""
-							if updateBlobber.ManagingWallet != "" && (b.ManagingWallet == nil || b.ManagingWallet == &emptyString) {
+							if updateBlobber.ManagingWallet != "" && (b.ManagingWallet == nil || *b.ManagingWallet == "") {
 								b.ManagingWallet = &updateBlobber.ManagingWallet
 							}
 							return nil
