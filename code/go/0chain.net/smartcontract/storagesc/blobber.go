@@ -265,43 +265,59 @@ func (sc *StorageSmartContract) updateBlobber(
 		}
 	}
 
-	err = existingBlobber.Update(&storageNodeV4{}, func(e entitywrapper.EntityI) error {
-		b := e.(*storageNodeV4)
-		b.IsRestricted = updateBlobber.IsRestricted
-
-		if b.StorageVersion == nil || *b.StorageVersion == 0 {
-			b.StorageVersion = updateBlobber.StorageVersion
-		}
-
-		if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
-			return nil
+	if actErr := cstate.WithActivation(balances, "electra",
+		func() error {
+			return existingBlobber.Update(&storageNodeV2{}, func(e entitywrapper.EntityI) error {
+				b := e.(*storageNodeV2)
+				b.IsRestricted = updateBlobber.IsRestricted
+				return nil
+			})
 		}, func() error {
-			// Update managing wallet
-			if updateBlobber.ManagingWallet != "" && (b.ManagingWallet == nil || *b.ManagingWallet == "") {
-				b.ManagingWallet = &updateBlobber.ManagingWallet
+			if actErr := cstate.WithActivation(balances, "hercules",
+				func() error {
+					return existingBlobber.Update(&storageNodeV3{}, func(e entitywrapper.EntityI) error {
+						b := e.(*storageNodeV3)
+						b.IsRestricted = updateBlobber.IsRestricted
+						return nil
+					})
+				}, func() error {
+					return existingBlobber.Update(&storageNodeV4{}, func(e entitywrapper.EntityI) error {
+						b := e.(*storageNodeV4)
+						b.IsRestricted = updateBlobber.IsRestricted
+
+						if b.StorageVersion == nil || *b.StorageVersion == 0 {
+							b.StorageVersion = updateBlobber.StorageVersion
+						}
+
+						if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
+							return nil
+						}, func() error {
+							// Update managing wallet
+							if updateBlobber.ManagingWallet != "" && (b.ManagingWallet == nil || *b.ManagingWallet == "") {
+								b.ManagingWallet = &updateBlobber.ManagingWallet
+							}
+
+							// Update delegate wallet
+							if b.GetVersion() == "v4" && updateBlobber.StakePoolSettings != nil && updateBlobber.StakePoolSettings.DelegateWallet != nil && *updateBlobber.StakePoolSettings.DelegateWallet != "" {
+								if b.ManagingWallet != nil && *b.ManagingWallet == txn.ClientID {
+									existingSp.Settings.DelegateWallet = *updateBlobber.StakePoolSettings.DelegateWallet
+									b.StakePoolSettings.DelegateWallet = *updateBlobber.StakePoolSettings.DelegateWallet
+								}
+							}
+
+							return nil
+						}); jasonActErr != nil {
+							return jasonActErr
+						}
+
+						return nil
+					})
+				}); actErr != nil {
+				return fmt.Errorf("error updating blobber: %v", actErr)
 			}
-
-			logging.Logger.Info("Jayash update_blobber_settings", zap.Any("blobber", b), zap.Any("update_blobber", updateBlobber))
-
-			// Update delegate wallet
-			if b.GetVersion() == "v4" && updateBlobber.StakePoolSettings != nil && updateBlobber.StakePoolSettings.DelegateWallet != nil && *updateBlobber.StakePoolSettings.DelegateWallet != "" {
-				logging.Logger.Info("Jayash In update_blobber_settings", zap.Any("blobber", b), zap.Any("update_blobber", updateBlobber))
-				if b.ManagingWallet != nil && *b.ManagingWallet == txn.ClientID {
-					logging.Logger.Info("Jayash In update_blobber_settings", zap.Any("blobber", b), zap.Any("update_blobber", updateBlobber))
-					existingSp.Settings.DelegateWallet = *updateBlobber.StakePoolSettings.DelegateWallet
-					b.StakePoolSettings.DelegateWallet = *updateBlobber.StakePoolSettings.DelegateWallet
-				}
-			}
-
 			return nil
-		}); jasonActErr != nil {
-			return jasonActErr
-		}
-
-		return nil
-	})
-	if err != nil {
-		return err
+		}); actErr != nil {
+		return fmt.Errorf("error with activation: %v", actErr)
 	}
 
 	_, err = balances.InsertTrieNode(existingBlobber.GetKey(), existingBlobber)
@@ -547,19 +563,23 @@ func (sc *StorageSmartContract) updateBlobberSettings(txn *transaction.Transacti
 	isManagingWallet := false
 
 	if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
-		if blobber.Entity().GetVersion() == "v4" && updatedBlobber.StakePoolSettings != nil && updatedBlobber.StakePoolSettings.DelegateWallet != nil && *updatedBlobber.StakePoolSettings.DelegateWallet != "" {
-			v4 := blobber.Entity().(*storageNodeV4)
-			if v4.ManagingWallet != nil && *v4.ManagingWallet == txn.ClientID {
-				isManagingWallet = true
-				existingSp.Settings.DelegateWallet = *updatedBlobber.StakePoolSettings.DelegateWallet
-				err = existingSp.Save(spenum.Blobber, updatedBlobber.ID, balances)
-				if err != nil {
-					return common.NewError("update_blobber_settings_failed",
-						"can't save related stake pool: "+err.Error())
+		return cstate.WithActivation(balances, "hercules", func() error {
+			return nil
+		}, func() error {
+			if blobber.Entity().GetVersion() == "v4" && updatedBlobber.StakePoolSettings != nil && updatedBlobber.StakePoolSettings.DelegateWallet != nil && *updatedBlobber.StakePoolSettings.DelegateWallet != "" {
+				v4 := blobber.Entity().(*storageNodeV4)
+				if v4.ManagingWallet != nil && *v4.ManagingWallet == txn.ClientID {
+					isManagingWallet = true
+					existingSp.Settings.DelegateWallet = *updatedBlobber.StakePoolSettings.DelegateWallet
+					err = existingSp.Save(spenum.Blobber, updatedBlobber.ID, balances)
+					if err != nil {
+						return common.NewError("update_blobber_settings_failed",
+							"can't save related stake pool: "+err.Error())
+					}
 				}
 			}
-		}
-		return nil
+			return nil
+		})
 	}, func() error {
 		if blobber.Entity().GetVersion() == "v4" {
 			v4 := blobber.Entity().(*storageNodeV4)
