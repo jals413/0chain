@@ -49,6 +49,8 @@ type Blobber struct {
 	TotalReadIncome     currency.Coin `json:"total_read_income"`
 	TotalSlashedStake   currency.Coin `json:"total_slashed_stake"`
 
+	ManagingWallet string `json:"managing_wallet"`
+
 	WriteMarkers []WriteMarker `gorm:"foreignKey:BlobberID;references:ID"`
 	ReadMarkers  []ReadMarker  `gorm:"foreignKey:BlobberID;references:ID"`
 
