@@ -324,6 +324,7 @@ func (edb *EventDb) updateBlobber(blobbers []Blobber) error {
 		"service_charge",
 		"last_health_check",
 		"total_stake",
+		"managing_wallet",
 	}
 	columns, err := Columnize(blobbers)
 	if err != nil {
