@@ -581,6 +581,12 @@ func (sc *StorageSmartContract) updateBlobberSettings(txn *transaction.Transacti
 			return nil
 		})
 	}, func() error {
+		if blobber.Entity().GetVersion() == "v4" {
+			v4 := blobber.Entity().(*storageNodeV4)
+			if v4.ManagingWallet != nil && *v4.ManagingWallet == txn.ClientID {
+				isManagingWallet = true
+			}
+		}
 		return nil
 	}); jasonActErr != nil {
 		return "", jasonActErr
