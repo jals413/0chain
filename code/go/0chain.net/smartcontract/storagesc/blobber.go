@@ -551,16 +551,30 @@ func (sc *StorageSmartContract) updateBlobberSettings(txn *transaction.Transacti
 			"blobber's delegate_wallet is not set")
 	}
 
+	isManagingWallet := false
+
+	if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
+		return nil
+	}, func() error {
+		if blobber.Entity().GetVersion() == "v4" {
+			v4 := blobber.Entity().(*storageNodeV4)
+			if v4.ManagingWallet != nil && *v4.ManagingWallet == txn.ClientID {
+				isManagingWallet = true
+			}
+		}
+		return nil
+	}); jasonActErr != nil {
+		return "", jasonActErr
+	}
+
 	isDelegateWallet := txn.ClientID == existingSp.Settings.DelegateWallet
-	if isDelegateWallet {
+	if isDelegateWallet || isManagingWallet {
 		// merge the savedBlobber and updatedBlobber fields using the deltas from the updatedBlobber and
 		// emit the update blobber event to db.
 		if err = sc.updateBlobber(txn, conf, updatedBlobber, blobber, existingSp, balances); err != nil {
 			return "", common.NewError("update_blobber_settings_failed", err.Error())
 		}
 	}
-
-	isManagingWallet := false
 
 	if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
 		return cstate.WithActivation(balances, "hercules", func() error {
@@ -581,12 +595,6 @@ func (sc *StorageSmartContract) updateBlobberSettings(txn *transaction.Transacti
 			return nil
 		})
 	}, func() error {
-		if blobber.Entity().GetVersion() == "v4" {
-			v4 := blobber.Entity().(*storageNodeV4)
-			if v4.ManagingWallet != nil && *v4.ManagingWallet == txn.ClientID {
-				isManagingWallet = true
-			}
-		}
 		return nil
 	}); jasonActErr != nil {
 		return "", jasonActErr
