@@ -24,6 +24,8 @@ type StorageDtoNode struct {
 	NotAvailable            *bool        `json:"not_available,omitempty"`
 	IsRestricted            *bool        `json:"is_restricted,omitempty"`
 	StorageVersion          *int         `json:"storage_version,omitempty"`
+
+	ManagingWallet string `json:"managing_wallet,omitempty"`
 }
 
 type RewardRound struct {

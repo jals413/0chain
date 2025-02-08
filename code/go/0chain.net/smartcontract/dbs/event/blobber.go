@@ -49,6 +49,8 @@ type Blobber struct {
 	TotalReadIncome     currency.Coin `json:"total_read_income"`
 	TotalSlashedStake   currency.Coin `json:"total_slashed_stake"`
 
+	ManagingWallet string `json:"managing_wallet"`
+
 	WriteMarkers []WriteMarker `gorm:"foreignKey:BlobberID;references:ID"`
 	ReadMarkers  []ReadMarker  `gorm:"foreignKey:BlobberID;references:ID"`
 
@@ -322,6 +324,7 @@ func (edb *EventDb) updateBlobber(blobbers []Blobber) error {
 		"service_charge",
 		"last_health_check",
 		"total_stake",
+		"managing_wallet",
 	}
 	columns, err := Columnize(blobbers)
 	if err != nil {

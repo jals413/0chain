@@ -63,6 +63,9 @@ func emitUpdateBlobber(sn *StorageNode, sp *stakePool, balances cstate.StateCont
 				if v4.StorageVersion != nil {
 					data.StorageVersion = *v4.StorageVersion
 				}
+				if v4.ManagingWallet != nil {
+					data.ManagingWallet = *v4.ManagingWallet
+				}
 			}
 		}
 		return nil
@@ -143,6 +146,10 @@ func emitAddBlobber(sn *StorageNode, sp *stakePool, balances cstate.StateContext
 
 				if v4.StorageVersion != nil {
 					data.StorageVersion = *v4.StorageVersion
+				}
+
+				if v4.ManagingWallet != nil {
+					data.ManagingWallet = *v4.ManagingWallet
 				}
 			}
 		}
