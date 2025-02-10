@@ -843,9 +843,15 @@ func validateLockRequest(t *transaction.Transaction, sp AbstractStakePool, vs Va
 	}
 
 	if len(sp.GetPools()) >= sp.GetSettings().MaxNumDelegates && !sp.HasStakePool(t.ClientID) {
-		return "", common.NewErrorf("stake_pool_lock_failed",
-			"max_delegates reached: %v, no more stake pools allowed",
-			vs.MaxNumDelegates)
+		return "", cstate.WithActivation(balances, "jason", func() error {
+			return common.NewErrorf("stake_pool_lock_failed",
+				"max_delegates reached: %v, no more stake pools allowed",
+				vs.MaxNumDelegates)
+		}, func() error {
+			return common.NewErrorf("stake_pool_lock_failed",
+				"max_delegates reached: %v, no more stake pools allowed",
+				sp.GetSettings().MaxNumDelegates)
+		})
 	}
 
 	return "", nil
