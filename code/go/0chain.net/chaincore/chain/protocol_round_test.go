@@ -72,7 +72,9 @@ func TestChain_GetLatestFinalizedMagicBlockRound(t *testing.T) {
 			chain.Initialize()
 			mb := block.NewMagicBlock()
 			mb.Miners = node.NewPool(node.NodeTypeMiner)
+			mb.Miners.NodesMap = make(map[string]*node.Node)
 			mb.Sharders = node.NewPool(node.NodeTypeSharder)
+			mb.Sharders.NodesMap = make(map[string]*node.Node)
 			chain.SetMagicBlock(mb)
 			lfmb.MagicBlock = mb
 
