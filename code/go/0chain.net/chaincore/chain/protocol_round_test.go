@@ -3,6 +3,7 @@ package chain
 import (
 	"0chain.net/chaincore/node"
 	"context"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -73,6 +74,10 @@ func TestChain_GetLatestFinalizedMagicBlockRound(t *testing.T) {
 			mb := block.NewMagicBlock()
 			mb.Miners = node.NewPool(node.NodeTypeMiner)
 			mb.Miners.NodesMap = make(map[string]*node.Node)
+			fmt.Println("len(mb.Miners.NodesMap)", len(mb.Miners.NodesMap))
+			fmt.Println("Size", mb.Miners.Size())
+			fmt.Println("MinGenerators", chain.MinGenerators())
+			fmt.Println("GeneratorPercent", chain.GeneratorsPercent())
 			mb.Sharders = node.NewPool(node.NodeTypeSharder)
 			mb.Sharders.NodesMap = make(map[string]*node.Node)
 			chain.SetMagicBlock(mb)
