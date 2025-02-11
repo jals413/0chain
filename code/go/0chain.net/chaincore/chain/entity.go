@@ -1012,6 +1012,9 @@ func (c *Chain) GetPrevMagicBlockFromMB(mb *block.MagicBlock) (
 func (c *Chain) SetMagicBlock(mb *block.MagicBlock) {
 	c.mbMutex.Lock()
 	defer c.mbMutex.Unlock()
+	// before saving, check protocol stats
+	c.InitializeMinerPoolIfNotSet(mb)
+
 	if err := c.MagicBlockStorage.Put(mb.Clone(), mb.StartingRound); err != nil {
 		logging.Logger.Error("failed to put magic block", zap.Error(err))
 	}
@@ -1889,6 +1892,19 @@ func (c *Chain) InitializeMinerPool(mb *block.MagicBlock) {
 		ms.FinalizationCountByRank = make([]int64, numGenerators)
 		ms.VerificationTicketsByRank = make([]int64, numGenerators)
 		nd.ProtocolStats = ms
+	}
+}
+
+func (c *Chain) InitializeMinerPoolIfNotSet(mb *block.MagicBlock) {
+	numGenerators := c.GetGeneratorsNumOfMagicBlock(mb)
+	for _, nd := range mb.Miners.CopyNodes() {
+		if nd.ProtocolStats == nil {
+			ms := &MinerStats{}
+			ms.GenerationCountByRank = make([]int64, numGenerators)
+			ms.FinalizationCountByRank = make([]int64, numGenerators)
+			ms.VerificationTicketsByRank = make([]int64, numGenerators)
+			nd.ProtocolStats = ms
+		}
 	}
 }
 
@@ -2778,6 +2794,9 @@ func (c *Chain) LoadLatestFinalizedMagicBlockFromStore(ctx context.Context) {
 				logging.Logger.Panic("load_latest_mb", zap.Error(err), zap.Int64("mb number", i))
 			}
 		}
+
+		// before saving, check protocol stats
+		c.InitializeMinerPoolIfNotSet(prevMb)
 
 		// load and set prev mb if not in chain.MagicBlockStorage so that
 		// blocks fetch process can verify tickets
