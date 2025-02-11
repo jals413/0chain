@@ -2,6 +2,12 @@ package chain
 
 import (
 	"0chain.net/chaincore/node"
+	"0chain.net/core/config"
+	"0chain.net/core/memorystore"
+	"0chain.net/core/viper"
+	"0chain.net/smartcontract/setupsc"
+	"github.com/0chain/common/core/logging"
+
 	"context"
 	"fmt"
 	"strconv"
@@ -15,6 +21,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	config.SetupDefaultConfig()
+	viper.Set("server_chain.smart_contract.faucet", true)
+	viper.Set("server_chain.smart_contract.miner", true)
+	viper.Set("server_chain.smart_contract.storage", true)
+	viper.Set("server_chain.smart_contract.vesting", true)
+	viper.Set("server_chain.smart_contract.zcn", true)
+	viper.Set("server_chain.smart_contract.multisig", true)
+	config.SmartContractConfig = viper.New()
+	config.SmartContractConfig.Set("smart_contracts.faucetsc.ownerId", "1746b06bb09f55ee01b33b5e2e055d6cc7a900cb57c0a3a5eaabb8a0e7745802")
+	config.SmartContractConfig.Set("smart_contracts.minersc.ownerId", "1746b06bb09f55ee01b33b5e2e055d6cc7a900cb57c0a3a5eaabb8a0e7745802")
+	config.SmartContractConfig.Set("smart_contracts.vestingsc.ownerId", "1746b06bb09f55ee01b33b5e2e055d6cc7a900cb57c0a3a5eaabb8a0e7745802")
+	config.SmartContractConfig.Set("smart_contracts.storagesc.ownerId", "1746b06bb09f55ee01b33b5e2e055d6cc7a900cb57c0a3a5eaabb8a0e7745802")
+
+	setupsc.SetupSmartContracts()
+	logging.InitLogging("development", "")
+	common.ConfigRateLimits()
+	block.SetupEntity(memorystore.GetStorageProvider())
+}
 
 func TestChain_GetLatestFinalizedMagicBlockRound(t *testing.T) {
 	lfmb := &block.Block{
@@ -65,11 +91,13 @@ func TestChain_GetLatestFinalizedMagicBlockRound(t *testing.T) {
 
 	for _, test := range cases {
 		t.Run(test.Name, func(t *testing.T) {
-			chain := &Chain{
-				magicBlockStartingRoundsMap: map[int64]*block.Block{},
-				getLFMB:                     make(chan *block.Block),
-				updateLFMB:                  make(chan *updateLFMBWithReply, 1),
-			}
+			chain := NewChainFromConfig()
+
+			//chain := &Chain{
+			//	magicBlockStartingRoundsMap: map[int64]*block.Block{},
+			//	getLFMB:                     make(chan *block.Block),
+			//	updateLFMB:                  make(chan *updateLFMBWithReply, 1),
+			//}
 			chain.Initialize()
 			mb := block.NewMagicBlock()
 			mb.Miners = node.NewPool(node.NodeTypeMiner)
