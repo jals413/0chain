@@ -398,6 +398,8 @@ func (sc *Chain) LoadLatestFinalizedMagicBlockFromStore(ctx context.Context) {
 			}
 		}
 
+		sc.InitializeMinerPoolIfNotSet(prevMb)
+
 		// load and set prev mb if not in chain.MagicBlockStorage so that
 		// blocks fetch process can verify tickets
 		// if mc.MagicBlockStorage.GetByStartingRound(prevMb.StartingRound) == nil {
