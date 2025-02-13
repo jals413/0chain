@@ -2848,6 +2848,7 @@ func blobberTableToStorageNode(blobber event.Blobber) storageNodeResponse {
 		IsRestricted:             blobber.IsRestricted,
 		IsEnterprise:             blobber.IsEnterprise,
 		StorageVersion:           blobber.StorageVersion,
+		ManagingWallet:           &blobber.ManagingWallet,
 	}
 }
 

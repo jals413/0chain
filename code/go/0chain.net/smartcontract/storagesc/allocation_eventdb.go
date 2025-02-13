@@ -59,6 +59,7 @@ func allocationTableToStorageAllocationBlobbers(alloc *event.Allocation, eventDb
 			IsRestricted:   b.IsRestricted,
 			IsEnterprise:   b.IsEnterprise,
 			StorageVersion: b.StorageVersion,
+			ManagingWallet: &b.ManagingWallet,
 		})
 
 		terms := blobberTermsMap[b.ID]
