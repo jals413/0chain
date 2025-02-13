@@ -77,8 +77,6 @@ func (np *Pool) AddNode(node *Node) error {
 		return fmt.Errorf("invalid public key, %v", err)
 	}
 
-	RegisterNode(node)
-
 	np.mmx.Lock()
 	_, ok := np.NodesMap[node.GetKey()]
 	if !ok {
@@ -96,6 +94,8 @@ func (np *Pool) AddNode(node *Node) error {
 	np.NodesMap[node.GetKey()] = node
 	np.computeNodePositions()
 	np.mmx.Unlock()
+
+	RegisterNode(node.Clone())
 
 	return nil
 }

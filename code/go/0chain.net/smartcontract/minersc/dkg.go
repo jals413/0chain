@@ -1072,7 +1072,11 @@ func (msc *MinerSmartContract) createMagicBlock(
 	gn *GlobalNode,
 ) (*block.MagicBlock, error) {
 
-	pmb := balances.GetChainCurrentMagicBlock()
+	// pmb := balances.GetChainCurrentMagicBlock()
+	pmb := gn.prevMagicBlock(balances)
+	logging.Logger.Debug("create magic block - prev magic block",
+		zap.Int64("number", pmb.MagicBlockNumber),
+		zap.String("hash", pmb.Hash))
 
 	magicBlock := block.NewMagicBlock()
 

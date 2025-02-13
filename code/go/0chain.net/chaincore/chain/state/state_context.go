@@ -490,6 +490,11 @@ func (sc *StateContext) setNodeValue(key datastore.Key, node util.MPTSerializabl
 	path := util.Path(encryption.Hash(key))
 
 	if actErr := WithActivation(sc, "jason", func() error {
+		if node == nil {
+			// continue the process
+			return nil
+		}
+
 		v, _ := node.MarshalMsg(nil)
 		if len(v) > MPTMaxAllowableNodeSize {
 			// the error should be the same as the error returned by the common package.

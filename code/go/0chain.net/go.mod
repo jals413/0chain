@@ -40,7 +40,7 @@ require (
 )
 
 require (
-	github.com/0chain/common v1.19.0
+	github.com/0chain/common v1.13.1-0.20250205123128-6d02be357b6b
 	github.com/0chain/gosdk v1.16.0
 	github.com/IBM/sarama v1.42.2
 	github.com/ethereum/go-ethereum v1.10.26
