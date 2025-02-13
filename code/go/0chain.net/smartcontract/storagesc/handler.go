@@ -2651,9 +2651,10 @@ type storageNodeResponse struct {
 	UncollectedServiceCharge currency.Coin `json:"uncollected_service_charge"`
 	CreatedAt                time.Time     `json:"created_at"`
 
-	IsRestricted   bool `json:"is_restricted"`
-	IsEnterprise   bool `json:"is_enterprise"`
-	StorageVersion int  `json:"storage_version"`
+	IsRestricted   bool    `json:"is_restricted"`
+	IsEnterprise   bool    `json:"is_enterprise"`
+	StorageVersion int     `json:"storage_version"`
+	ManagingWallet *string `json:"managing_wallet"`
 }
 
 func StoragNodeToStorageNodeResponse(balances cstate.StateContextI, sn StorageNode) (storageNodeResponse, error) {
@@ -2705,6 +2706,17 @@ func StoragNodeToStorageNodeResponse(balances cstate.StateContextI, sn StorageNo
 				if v4.StorageVersion != nil {
 					sr.StorageVersion = *v4.StorageVersion
 				}
+				if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
+					return nil
+				}, func() error {
+					if v4.ManagingWallet != nil {
+						sr.ManagingWallet = v4.ManagingWallet
+					}
+					return nil
+				}); jasonActErr != nil {
+					return jasonActErr
+				}
+
 			}
 		} else {
 			sv2, ok := sn.Entity().(*storageNodeV2)
@@ -2797,6 +2809,7 @@ func storageNodeResponseToStorageNodeV4(snr storageNodeResponse) *storageNodeV4 
 		IsRestricted:            &snr.IsRestricted,
 		IsEnterprise:            &snr.IsEnterprise,
 		StorageVersion:          &snr.StorageVersion,
+		ManagingWallet:          snr.ManagingWallet,
 	}
 }
 
@@ -2835,6 +2848,7 @@ func blobberTableToStorageNode(blobber event.Blobber) storageNodeResponse {
 		IsRestricted:             blobber.IsRestricted,
 		IsEnterprise:             blobber.IsEnterprise,
 		StorageVersion:           blobber.StorageVersion,
+		ManagingWallet:           &blobber.ManagingWallet,
 	}
 }
 
