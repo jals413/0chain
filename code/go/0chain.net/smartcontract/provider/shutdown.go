@@ -18,7 +18,7 @@ func ShutDown(
 	input []byte,
 	clientId, ownerId string,
 	killSlash float64,
-	providerSpecific func(ProviderRequest) (AbstractProvider, stakepool.AbstractStakePool, error),
+	providerSpecific func(ProviderRequest) (AbstractProvider, string, stakepool.AbstractStakePool, error),
 	refreshProvider func(ProviderRequest) error,
 	balances cstate.StateContextI,
 ) error {
@@ -27,7 +27,7 @@ func ShutDown(
 		return err
 	}
 
-	p, sp, err := providerSpecific(req)
+	p, authWallet, sp, err := providerSpecific(req)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func ShutDown(
 
 	var errCode = "shutdown_" + p.Type().String() + "_failed"
 	if err := smartcontractinterface.AuthorizeWithOwner(errCode, func() bool {
-		return ownerId == clientId || clientId == sp.GetSettings().DelegateWallet
+		return ownerId == clientId || clientId == authWallet
 	}); err != nil {
 		return err
 	}

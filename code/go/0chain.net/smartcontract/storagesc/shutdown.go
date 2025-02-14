@@ -37,26 +37,47 @@ func (_ *StorageSmartContract) shutdownBlobber(
 		tx.ClientID,
 		conf.OwnerId,
 		conf.StakePool.KillSlash/2,
-		func(req provider.ProviderRequest) (provider.AbstractProvider, stakepool.AbstractStakePool, error) {
+		func(req provider.ProviderRequest) (provider.AbstractProvider, string, stakepool.AbstractStakePool, error) {
 			var err error
 			if blobber, err = getBlobber(req.ID, balances); err != nil {
-				return nil, nil, common.NewError("shutdown_blobber_failed",
+				return nil, "", nil, common.NewError("shutdown_blobber_failed",
 					"can't get the blobber "+tx.ClientID+": "+err.Error())
+			}
+
+			var managingWallet string
+
+			if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
+				managingWallet = blobber.mustBase().StakePoolSettings.DelegateWallet
+				return nil
+			}, func() error {
+				if blobber.Entity().GetVersion() == "v4" {
+					v4 := blobber.Entity().(*storageNodeV4)
+					if v4.ManagingWallet != nil {
+						managingWallet = *v4.ManagingWallet
+					}
+				}
+				if managingWallet == "" {
+					return common.NewError("shutdown_blobber_failed", "managing wallet is not set, please set managing wallet for blobber using blobber_update_settings")
+				}
+
+				return nil
+			}); jasonActErr != nil {
+				return nil, "", nil, jasonActErr
 			}
 
 			if err := partitionsChallengeReadyBlobbersRemove(balances, blobber.Id()); err != nil {
 				if !strings.HasPrefix(err.Error(), partitions.ErrItemNotFoundCode) {
-					return nil, nil, common.NewError("shutdown_blobber_failed",
+					return nil, "", nil, common.NewError("shutdown_blobber_failed",
 						"remove blobber form challenge partition, "+err.Error())
 				}
 			}
 
 			sp, err = getStakePoolAdapter(blobber.Type(), blobber.Id(), balances)
 			if err != nil {
-				return nil, nil, err
+				return nil, "", nil, err
 			}
 
-			return blobber, sp, nil
+			return blobber, managingWallet, sp, nil
 		},
 		func(req provider.ProviderRequest) error {
 			stakePool, err := getStakePool(spenum.Blobber, req.ID, balances)
@@ -143,22 +164,22 @@ func (_ *StorageSmartContract) shutdownValidator(
 		tx.ClientID,
 		conf.OwnerId,
 		conf.StakePool.KillSlash/2,
-		func(req provider.ProviderRequest) (provider.AbstractProvider, stakepool.AbstractStakePool, error) {
+		func(req provider.ProviderRequest) (provider.AbstractProvider, string, stakepool.AbstractStakePool, error) {
 			var err error
 			if err = balances.GetTrieNode(provider.GetKey(req.ID), validator); err != nil {
-				return nil, nil, common.NewError("shutdown_validator_failed",
+				return nil, "", nil, common.NewError("shutdown_validator_failed",
 					"can't get the blobber "+tx.ClientID+": "+err.Error())
 			}
 
 			validatorPartitions, err := getValidatorsList(balances)
 			if err != nil {
-				return nil, nil, common.NewError("shutdown_validator_failed",
+				return nil, "", nil, common.NewError("shutdown_validator_failed",
 					"failed to retrieve validator list."+err.Error())
 			}
 
 			if err := validatorPartitions.Remove(balances, validator.Id()); err != nil {
 				if !strings.HasPrefix(err.Error(), partitions.ErrItemNotFoundCode) {
-					return nil, nil, common.NewErrorf("shutdown_validator_failed",
+					return nil, "", nil, common.NewErrorf("shutdown_validator_failed",
 						"failed to remove validator: %v", err)
 				}
 			}
@@ -169,14 +190,14 @@ func (_ *StorageSmartContract) shutdownValidator(
 				return validatorPartitions.Save(balances)
 			})
 			if actErr != nil {
-				return nil, nil, actErr
+				return nil, "", nil, actErr
 			}
 
 			sp, err = getStakePoolAdapter(validator.Type(), validator.Id(), balances)
 			if err != nil {
-				return nil, nil, err
+				return nil, "", nil, err
 			}
-			return validator, sp, nil
+			return validator, sp.GetSettings().DelegateWallet, sp, nil
 		},
 		refreshProviderFunc,
 		balances,
