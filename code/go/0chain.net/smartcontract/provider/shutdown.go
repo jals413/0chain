@@ -49,8 +49,12 @@ func ShutDown(
 		return fmt.Errorf("can't kill the stake pool: %v", err)
 	}
 
-	if err = sp.Save(p.Type(), clientId, balances); err != nil {
-		return err
+	if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
+		return sp.Save(p.Type(), clientId, balances)
+	}, func() error {
+		return sp.Save(p.Type(), req.ID, balances)
+	}); jasonActErr != nil {
+		return jasonActErr
 	}
 
 	var errCode = "shutdown_" + p.Type().String() + "_failed"
