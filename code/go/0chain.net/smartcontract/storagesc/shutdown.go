@@ -57,9 +57,8 @@ func (_ *StorageSmartContract) shutdownBlobber(
 					}
 				}
 				if managingWallet == "" {
-					return common.NewError("shutdown_blobber_failed", "managing wallet is not set, please set managing wallet for blobber using blobber_update_settings")
+					managingWallet = sp.GetSettings().DelegateWallet
 				}
-
 				return nil
 			}); jasonActErr != nil {
 				return nil, "", nil, jasonActErr
