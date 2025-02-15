@@ -44,20 +44,20 @@ func (_ *StorageSmartContract) shutdownBlobber(
 					"can't get the blobber "+tx.ClientID+": "+err.Error())
 			}
 
-			var managingWallet string
+			var authWallet string
 
 			if jasonActErr := cstate.WithActivation(balances, "jason", func() error {
-				managingWallet = blobber.mustBase().StakePoolSettings.DelegateWallet
+				authWallet = blobber.mustBase().StakePoolSettings.DelegateWallet
 				return nil
 			}, func() error {
 				if blobber.Entity().GetVersion() == "v4" {
 					v4 := blobber.Entity().(*storageNodeV4)
 					if v4.ManagingWallet != nil {
-						managingWallet = *v4.ManagingWallet
+						authWallet = *v4.ManagingWallet
 					}
 				}
-				if managingWallet == "" {
-					managingWallet = sp.GetSettings().DelegateWallet
+				if authWallet == "" {
+					authWallet = sp.GetSettings().DelegateWallet
 				}
 				return nil
 			}); jasonActErr != nil {
@@ -76,7 +76,7 @@ func (_ *StorageSmartContract) shutdownBlobber(
 				return nil, "", nil, err
 			}
 
-			return blobber, managingWallet, sp, nil
+			return blobber, authWallet, sp, nil
 		},
 		func(req provider.ProviderRequest) error {
 			stakePool, err := getStakePool(spenum.Blobber, req.ID, balances)
